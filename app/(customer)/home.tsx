@@ -1,18 +1,19 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { CitySearchModal } from '../../src/components/CitySearchModal';
 import { ImageSlot } from '../../src/components/ImageSlot';
 import { Segmented } from '../../src/components/Segmented';
-import { Sheet } from '../../src/components/Sheet';
 import { GlassBadge, Screen, SectionTitle } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
 import { fetchCategories } from '../../src/lib/api';
-import { CITIES } from '../../src/lib/sampleData';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { Category } from '../../src/types';
 
-type AudienceTab = 'him' | 'her' | 'anyone';
+type AudienceTab = 'him' | 'her';
 
 export default function Home() {
   const { theme } = useTheme();
@@ -20,11 +21,39 @@ export default function Home() {
   const router = useRouter();
   const [audience, setAudience] = useState<AudienceTab>('him');
   const [cats, setCats] = useState<Category[]>([]);
+  const [search, setSearch] = useState('');
   const [showCity, setShowCity] = useState(false);
+  const autoLocated = useRef(false);
 
   useEffect(() => {
     fetchCategories(audience).then(setCats);
   }, [audience]);
+
+  // If device location is already enabled, show the real city (no prompt).
+  useEffect(() => {
+    if (autoLocated.current) return;
+    autoLocated.current = true;
+    (async () => {
+      try {
+        const { granted } = await Location.getForegroundPermissionsAsync();
+        if (!granted) return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+        const [place] = await Location.reverseGeocodeAsync({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+        const city = place?.city ?? place?.subregion;
+        if (city) updateProfile({ city: place?.region && place.region !== city ? `${city}, ${place.region}` : city });
+      } catch {
+        // keep the stored / default city
+      }
+    })();
+  }, [updateProfile]);
+
+  function submitSearch() {
+    const q = search.trim();
+    if (q) router.push({ pathname: '/(customer)/search', params: { q } });
+  }
 
   return (
     <Screen clearTabBar>
@@ -32,23 +61,66 @@ export default function Home() {
       <Pressable onPress={() => setShowCity(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Feather name="map-pin" size={15} color={theme.iconMuted} />
         <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textSecondary }}>
-          {profile?.city ?? 'San Francisco, CA'}
+          {profile?.city ?? 'Select a city'}
         </Text>
         <Feather name="chevron-down" size={14} color={theme.iconMuted} />
       </Pressable>
 
-      <Text
-        style={{ fontSize: 33, fontWeight: '800', letterSpacing: -0.9, color: theme.text, marginTop: 10 }}
-      >
-        Book your next{'\n'}me time
+      <Text style={{ fontSize: 33, fontWeight: '800', letterSpacing: -0.9, color: theme.text, marginTop: 8 }}>
+        Find your me time
       </Text>
 
-      <View style={{ marginTop: 18 }}>
+      {/* Search salons & services + filter button (opens city picker) */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18 }}>
+        <View
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: theme.card,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: theme.cardBorder,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+          }}
+        >
+          <Feather name="search" size={18} color={theme.iconMuted} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search salons & services"
+            placeholderTextColor={theme.textFaint}
+            returnKeyType="search"
+            onSubmitEditing={submitSearch}
+            style={{ flex: 1, fontSize: 16, color: theme.text, padding: 0 }}
+          />
+        </View>
+        <Pressable
+          onPress={() => setShowCity(true)}
+          style={({ pressed }) => ({
+            width: 52,
+            height: 52,
+            borderRadius: 16,
+            backgroundColor: theme.card,
+            borderWidth: 1,
+            borderColor: theme.cardBorder,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <Feather name="sliders" size={20} color={theme.iconStroke} />
+        </Pressable>
+      </View>
+
+      {/* For him / For her switch */}
+      <View style={{ marginTop: 16 }}>
         <Segmented<AudienceTab>
           options={[
-            { value: 'him', label: 'Him' },
-            { value: 'her', label: 'Her' },
-            { value: 'anyone', label: 'Anyone' },
+            { value: 'him', label: 'For him' },
+            { value: 'her', label: 'For her' },
           ]}
           value={audience}
           onChange={setAudience}
@@ -64,42 +136,56 @@ export default function Home() {
             onPress={() => router.push({ pathname: '/(customer)/salons', params: { catId: c.id, catName: c.name } })}
             style={({ pressed }) => ({ width: '48.3%', marginBottom: 12, opacity: pressed ? 0.9 : 1 })}
           >
-            <View>
+            <View style={{ borderRadius: 20, overflow: 'hidden' }}>
               <ImageSlot uri={c.image_url} aspectRatio={1} radius={20} caption={c.name} />
-              <View style={{ position: 'absolute', left: 10, bottom: 10, right: 10 }}>
-                <GlassBadge style={{ alignSelf: 'flex-start' }}>
-                  {c.name} · {c.count ?? 0}
-                </GlassBadge>
+              {/* readability scrim so the white label reads over any photo */}
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.45)']}
+                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' }}
+                pointerEvents="none"
+              />
+              {/* ANYONE badge for categories open to everyone */}
+              {c.audience === 'both' ? (
+                <GlassBadge style={{ position: 'absolute', top: 10, right: 10 }}>ANYONE</GlassBadge>
+              ) : null}
+              {/* Name + nearby count overlaid at the bottom */}
+              <View style={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: '800',
+                    color: '#fff',
+                    textShadowColor: 'rgba(0,0,0,0.35)',
+                    textShadowRadius: 6,
+                  }}
+                >
+                  {c.name}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: 'rgba(255,255,255,0.9)',
+                    textShadowColor: 'rgba(0,0,0,0.35)',
+                    textShadowRadius: 6,
+                    marginTop: 1,
+                  }}
+                >
+                  {c.count ?? 0} nearby
+                </Text>
               </View>
             </View>
           </Pressable>
         ))}
       </View>
 
-      {/* City picker sheet */}
-      <Sheet visible={showCity} onClose={() => setShowCity(false)}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 10 }}>Your city</Text>
-        {CITIES.map((c, i) => (
-          <Pressable
-            key={c}
-            onPress={() => {
-              updateProfile({ city: c });
-              setShowCity(false);
-            }}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: 14,
-              borderTopWidth: i === 0 ? 0 : 1,
-              borderTopColor: theme.hairline,
-            }}
-          >
-            <Text style={{ fontSize: 16, color: theme.text }}>{c}</Text>
-            {profile?.city === c ? <Feather name="check" size={18} color={theme.iconStroke} /> : null}
-          </Pressable>
-        ))}
-      </Sheet>
+      {/* City picker (opened by the location row or the filter button) */}
+      <CitySearchModal
+        visible={showCity}
+        current={profile?.city}
+        onClose={() => setShowCity(false)}
+        onSelect={(city) => updateProfile({ city })}
+      />
     </Screen>
   );
 }

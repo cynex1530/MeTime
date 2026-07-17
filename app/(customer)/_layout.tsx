@@ -18,6 +18,7 @@ export default function CustomerLayout() {
       <Tabs.Screen name="home" />
       <Tabs.Screen name="bookings" />
       <Tabs.Screen name="profile" />
+      <Tabs.Screen name="search" options={{ href: null }} />
       <Tabs.Screen name="salons" options={{ href: null }} />
       <Tabs.Screen name="salon/[id]" options={{ href: null }} />
       <Tabs.Screen name="artists" options={{ href: null }} />

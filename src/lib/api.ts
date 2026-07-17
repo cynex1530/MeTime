@@ -54,6 +54,27 @@ export async function fetchSalon(id: string): Promise<Salon | null> {
   return SAMPLE_SALONS.find((s) => s.id === id) ?? null;
 }
 
+/** Search salons by name / tag / area / sub-service for the Home search bar. */
+export async function searchSalons(query: string): Promise<Salon[]> {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  if (supabase) {
+    const { data } = await supabase
+      .from('salons')
+      .select('*')
+      .or(`name.ilike.%${q}%,tag.ilike.%${q}%,area.ilike.%${q}%`)
+      .eq('is_active', true)
+      .limit(25);
+    if (data?.length) return data as Salon[];
+    if (data) return [];
+  }
+  return SAMPLE_SALONS.filter((s) =>
+    [s.name, s.tag, s.area, ...(s.sub_services ?? [])]
+      .filter(Boolean)
+      .some((field) => field!.toLowerCase().includes(q))
+  );
+}
+
 export async function fetchSalonArtists(salonId: string): Promise<Artist[]> {
   if (supabase) {
     const { data } = await supabase

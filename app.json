@@ -12,19 +12,31 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.metime.mobile"
+      "bundleIdentifier": "app.metime.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Me Time uses your location to show salons and artists near you."
+      }
     },
     "android": {
       "package": "app.metime.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#1c1c1e"
-      }
+      },
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
     },
     "web": {
       "bundler": "metro",
       "output": "static"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Me Time uses your location to show salons and artists near you."
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     }
