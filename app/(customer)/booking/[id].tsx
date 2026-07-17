@@ -1,11 +1,10 @@
 import { Feather } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { ConfirmDialog } from '../../../src/components/Sheet';
+import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { BackButton, Card, Screen, ScreenTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
-import { cancelBooking, fetchMyBookings } from '../../../src/lib/api';
+import { fetchMyBookings } from '../../../src/lib/api';
 import { formatBookingDate, formatPrice, formatTimeRange } from '../../../src/lib/format';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Booking } from '../../../src/types';
@@ -13,10 +12,8 @@ import { Booking } from '../../../src/types';
 export default function BookingDetail() {
   const { theme } = useTheme();
   const { profile } = useAuth();
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
-  const [confirmCancel, setConfirmCancel] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -25,6 +22,17 @@ export default function BookingDetail() {
   }, [profile, id]);
 
   if (!booking) return <Screen scroll={false} />;
+
+  const artistFirstName = booking.artist_name?.split(' ')[0] ?? 'the artist';
+
+  function callArtist() {
+    if (!booking?.artist_phone) {
+      Alert.alert('No phone number', `${booking?.artist_name ?? 'This artist'} has no phone number on file yet.`);
+      return;
+    }
+    // tel: URLs must not contain spaces
+    Linking.openURL(`tel:${booking.artist_phone.replace(/[\s()-]/g, '')}`);
+  }
 
   const rows: Array<{ icon: keyof typeof Feather.glyphMap; label: string; value: string }> = [
     { icon: 'scissors', label: 'Service', value: booking.service_name },
@@ -37,7 +45,10 @@ export default function BookingDetail() {
   return (
     <Screen clearTabBar>
       <BackButton />
-      <ScreenTitle title={booking.salon_name ?? 'Booking'} subtitle={booking.status === 'confirmed' ? 'Confirmed' : booking.status} />
+      <ScreenTitle
+        title={booking.salon_name ?? 'Booking'}
+        subtitle={booking.status === 'confirmed' ? 'Confirmed' : booking.status}
+      />
       <Card style={{ gap: 16 }}>
         {rows.map((r) => (
           <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -52,34 +63,27 @@ export default function BookingDetail() {
         ))}
       </Card>
 
+      {/* Changes go through the artist directly — no in-app cancellation */}
       <Pressable
-        onPress={() => setConfirmCancel(true)}
+        onPress={callArtist}
         style={({ pressed }) => ({
           marginTop: 24,
-          backgroundColor: theme.card,
-          borderRadius: 16,
-          borderWidth: 1.5,
-          borderColor: theme.destructiveBorder,
-          paddingVertical: 16,
+          backgroundColor: theme.inkSurface,
+          borderRadius: 18,
+          paddingVertical: 17,
+          flexDirection: 'row',
+          justifyContent: 'center',
           alignItems: 'center',
+          gap: 8,
           opacity: pressed ? 0.85 : 1,
         })}
       >
-        <Text style={{ color: theme.destructive, fontSize: 16, fontWeight: '700' }}>Cancel booking</Text>
+        <Feather name="phone" size={17} color={theme.onInk} />
+        <Text style={{ color: theme.onInk, fontSize: 16, fontWeight: '700' }}>Call {artistFirstName}</Text>
       </Pressable>
-
-      <ConfirmDialog
-        visible={confirmCancel}
-        title="Cancel this booking?"
-        message={`${booking.service_name} at ${booking.salon_name ?? 'the salon'} will be cancelled.`}
-        confirmLabel="Cancel booking"
-        onCancel={() => setConfirmCancel(false)}
-        onConfirm={async () => {
-          await cancelBooking(booking.id);
-          setConfirmCancel(false);
-          router.back();
-        }}
-      />
+      <Text style={{ fontSize: 13, color: theme.textFaint, textAlign: 'center', marginTop: 12, lineHeight: 18 }}>
+        Need to reschedule or cancel? Give {artistFirstName} a quick call.
+      </Text>
     </Screen>
   );
 }

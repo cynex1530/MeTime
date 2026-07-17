@@ -86,7 +86,7 @@ export async function fetchMyBookings(customerId: string): Promise<Booking[]> {
   if (supabase) {
     const { data } = await supabase
       .from('bookings')
-      .select('*, salons(name, area), artists(display_name)')
+      .select('*, salons(name, area), artists(display_name, phone)')
       .eq('customer_id', customerId)
       .neq('status', 'cancelled')
       .order('starts_at');
@@ -96,6 +96,7 @@ export async function fetchMyBookings(customerId: string): Promise<Booking[]> {
         salon_name: b.salons?.name,
         salon_area: b.salons?.area,
         artist_name: b.artists?.display_name,
+        artist_phone: b.artists?.phone,
       }));
     }
     if (data) return [];

@@ -25,7 +25,7 @@ function FloatingTabBar({
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const currentRoute = state.routes[state.index]?.name ?? '';
-  if (hiddenRoutes.some((r) => currentRoute.startsWith(r))) return null;
+  if (hiddenRoutes.includes(currentRoute)) return null;
 
   return (
     <View

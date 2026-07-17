@@ -124,6 +124,12 @@ insert into public.artists
   ('30000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000006',
    null, 'Rae Ortiz', 'Custom artist', null, 'rae@inktheory.com', 6, 4.9);
 
+update public.artists set phone = '+1 555 0142' where id = '30000000-0000-0000-0000-000000000001';
+update public.artists set phone = '+1 555 0143' where id = '30000000-0000-0000-0000-000000000002';
+update public.artists set phone = '+1 555 0144' where id = '30000000-0000-0000-0000-000000000003';
+update public.artists set phone = '+1 555 0199' where id = '30000000-0000-0000-0000-000000000004';
+update public.artists set phone = '+1 555 0198' where id = '30000000-0000-0000-0000-000000000005';
+
 -- ----------------------------------------------------------------------------
 -- Services
 -- ----------------------------------------------------------------------------

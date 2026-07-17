@@ -45,6 +45,7 @@ export type Artist = {
   title: string | null;
   bio: string | null;
   email: string | null;
+  phone?: string | null;
   years_experience: number;
   rating: number;
   photo_url: string | null;
@@ -93,5 +94,6 @@ export type Booking = {
   // joined display fields
   salon_name?: string;
   artist_name?: string;
+  artist_phone?: string | null;
   salon_area?: string;
 };

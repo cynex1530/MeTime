@@ -89,8 +89,8 @@ function atDay(daysFromNow: number, time: string): string {
 }
 
 export const SAMPLE_BOOKINGS: Booking[] = [
-  { id: 'b1', customer_id: 'demo', salon_id: 'fade', artist_id: 'ar1', service_id: null, service_name: 'Skin Fade', duration_minutes: 50, price_cents: 4000, customer_name: 'Alex Morgan', customer_phone: '+1 555 0142', starts_at: atDay(2, '14:00'), ends_at: atDay(2, '14:50'), status: 'confirmed', salon_name: 'Fade & Co.', artist_name: 'Marco Rossi', salon_area: 'Downtown · SF' },
-  { id: 'b2', customer_id: 'demo', salon_id: 'ink', artist_id: 'ai1', service_id: null, service_name: 'Small Tattoo', duration_minutes: 120, price_cents: 12000, customer_name: 'Alex Morgan', customer_phone: '+1 555 0199', starts_at: atDay(6, '11:00'), ends_at: atDay(6, '13:00'), status: 'confirmed', salon_name: 'Ink Theory', artist_name: 'Lena Voss', salon_area: 'Mission · SF' },
+  { id: 'b1', customer_id: 'demo', salon_id: 'fade', artist_id: 'ar1', service_id: null, service_name: 'Skin Fade', duration_minutes: 50, price_cents: 4000, customer_name: 'Alex Morgan', customer_phone: '+1 555 0142', starts_at: atDay(2, '14:00'), ends_at: atDay(2, '14:50'), status: 'confirmed', salon_name: 'Fade & Co.', artist_name: 'Marco Rossi', artist_phone: '+1 555 0142', salon_area: 'Downtown · SF' },
+  { id: 'b2', customer_id: 'demo', salon_id: 'ink', artist_id: 'ai1', service_id: null, service_name: 'Small Tattoo', duration_minutes: 120, price_cents: 12000, customer_name: 'Alex Morgan', customer_phone: '+1 555 0199', starts_at: atDay(6, '11:00'), ends_at: atDay(6, '13:00'), status: 'confirmed', salon_name: 'Ink Theory', artist_name: 'Lena Voss', artist_phone: '+1 555 0199', salon_area: 'Mission · SF' },
 ];
 
 export const SAMPLE_SCHEDULE: Booking[] = [
