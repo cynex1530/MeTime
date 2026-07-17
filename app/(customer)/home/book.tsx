@@ -5,7 +5,7 @@ import { BackButton, Card, PrimaryButton, Screen, SectionTitle } from '../../../
 import { useAuth } from '../../../src/hooks/useAuth';
 import { createBooking, fetchArtistServices } from '../../../src/lib/api';
 import { formatDuration, formatPrice, WEEKDAYS } from '../../../src/lib/format';
-import { BOOKING_TIMES, BUSY_TIMES } from '../../../src/lib/sampleData';
+import { slotsForDay } from '../../../src/lib/sampleData';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Service } from '../../../src/types';
 
@@ -17,7 +17,12 @@ function nextDays(count: number) {
   });
 }
 
-/** Full-screen booking form: pick service → day → time. Tab bar hidden. */
+/**
+ * Full-screen booking form with progressive disclosure:
+ * service → (reveals) day → (reveals) time → Confirm enabled.
+ * Time slots are the selected day's availability; changing the day refreshes
+ * them and clears any previously picked time.
+ */
 export default function Book() {
   const { theme } = useTheme();
   const { profile } = useAuth();
@@ -41,8 +46,26 @@ export default function Book() {
   }, [artistId, catId]);
 
   const days = useMemo(() => nextDays(8), []);
+  // Which days have at least one open slot (fully booked days are disabled).
+  const dayAvailability = useMemo(
+    () => days.map((d) => slotsForDay(d).some((s) => s.available)),
+    [days]
+  );
+  // Slots for the currently selected day.
+  const daySlots = useMemo(() => (selDay ? slotsForDay(selDay) : []), [selDay]);
+
   const service = services.find((s) => s.id === serviceId);
   const canConfirm = !!service && !!selDay && !!selTime;
+
+  function pickService(id: string) {
+    setServiceId(id);
+  }
+
+  // Selecting a day refreshes the time slots and clears any stale time pick.
+  function pickDay(d: Date) {
+    setSelDay(d);
+    setSelTime(null);
+  }
 
   async function confirm() {
     if (!service || !selDay || !selTime) return;
@@ -86,6 +109,7 @@ export default function Book() {
         {artistName} · {salonName}
       </Text>
 
+      {/* Step 1 — service (always shown) */}
       <SectionTitle>Service</SectionTitle>
       <View style={{ gap: 10 }}>
         {services.map((s) => {
@@ -93,7 +117,7 @@ export default function Book() {
           return (
             <Card
               key={s.id}
-              onPress={() => setServiceId(s.id)}
+              onPress={() => pickService(s.id)}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -125,63 +149,72 @@ export default function Book() {
         })}
       </View>
 
-      <SectionTitle>Day</SectionTitle>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {days.map((d, i) => {
-          const sel = selDay?.toDateString() === d.toDateString();
-          const full = i === 3; // sample "fully booked" day, as in the prototype
-          return (
-            <Pressable
-              key={d.toISOString()}
-              disabled={full}
-              onPress={() => setSelDay(d)}
-              style={{
-                width: 62,
-                paddingVertical: 12,
-                borderRadius: 14,
-                alignItems: 'center',
-                backgroundColor: sel ? theme.inkSurface : theme.card,
-                borderWidth: 1,
-                borderColor: sel ? theme.inkSurface : theme.cardBorder,
-                opacity: full ? 0.35 : 1,
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '700', color: sel ? theme.onInk : theme.textSecondary }}>
-                {WEEKDAYS[d.getDay()].toUpperCase()}
-              </Text>
-              <Text style={{ fontSize: 17, fontWeight: '800', color: sel ? theme.onInk : theme.text, marginTop: 2 }}>
-                {d.getDate()}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* Step 2 — day (revealed once a service is picked) */}
+      {service ? (
+        <>
+          <SectionTitle>Day</SectionTitle>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {days.map((d, i) => {
+              const sel = selDay?.toDateString() === d.toDateString();
+              const full = !dayAvailability[i];
+              return (
+                <Pressable
+                  key={d.toISOString()}
+                  disabled={full}
+                  onPress={() => pickDay(d)}
+                  style={{
+                    width: 62,
+                    paddingVertical: 12,
+                    borderRadius: 14,
+                    alignItems: 'center',
+                    backgroundColor: sel ? theme.inkSurface : theme.card,
+                    borderWidth: 1,
+                    borderColor: sel ? theme.inkSurface : theme.cardBorder,
+                    opacity: full ? 0.35 : 1,
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: sel ? theme.onInk : theme.textSecondary }}>
+                    {WEEKDAYS[d.getDay()].toUpperCase()}
+                  </Text>
+                  <Text style={{ fontSize: 17, fontWeight: '800', color: sel ? theme.onInk : theme.text, marginTop: 2 }}>
+                    {d.getDate()}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      ) : null}
 
-      <SectionTitle>Time</SectionTitle>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {BOOKING_TIMES.map((t) => {
-          const busySlot = BUSY_TIMES.includes(t);
-          const sel = selTime === t;
-          return (
-            <Pressable
-              key={t}
-              disabled={busySlot}
-              onPress={() => setSelTime(t)}
-              style={{
-                paddingHorizontal: 18,
-                paddingVertical: 11,
-                borderRadius: 999,
-                backgroundColor: sel ? theme.inkSurface : theme.card,
-                borderWidth: 1,
-                borderColor: sel ? theme.inkSurface : theme.cardBorder,
-                opacity: busySlot ? 0.35 : 1,
-              }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: sel ? theme.onInk : theme.text }}>{t}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* Step 3 — time (revealed once a day is picked; slots follow the day) */}
+      {service && selDay ? (
+        <>
+          <SectionTitle>Time</SectionTitle>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {daySlots.map(({ time, available }) => {
+              const sel = selTime === time;
+              return (
+                <Pressable
+                  key={time}
+                  disabled={!available}
+                  onPress={() => setSelTime(time)}
+                  style={{
+                    paddingHorizontal: 18,
+                    paddingVertical: 11,
+                    borderRadius: 999,
+                    backgroundColor: sel ? theme.inkSurface : theme.card,
+                    borderWidth: 1,
+                    borderColor: sel ? theme.inkSurface : theme.cardBorder,
+                    opacity: available ? 1 : 0.35,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: sel ? theme.onInk : theme.text }}>{time}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      ) : null}
 
       <PrimaryButton
         title="Confirm booking"

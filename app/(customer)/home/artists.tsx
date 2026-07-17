@@ -84,6 +84,11 @@ export default function ArtistSelect() {
                   style={{
                     opacity: active ? 1 : 0.5,
                     transform: [{ scale: active ? 1 : 0.92 }],
+                    // active card gets a black border (white in dark theme)
+                    borderRadius: 24,
+                    borderWidth: active ? 3 : 0,
+                    borderColor: theme.text,
+                    overflow: 'hidden',
                   }}
                 >
                   <ImageSlot uri={a.photo_url} aspectRatio={3 / 4} radius={24} caption={a.display_name} />

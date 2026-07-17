@@ -112,3 +112,17 @@ export const CITIES = ['San Francisco, CA', 'Oakland, CA', 'Berkeley, CA', 'San 
 export const SUB_SERVICES = ['Haircut', 'Beard', 'Color', 'Shave', 'Kids', 'Styling', 'Treatment', 'Wax'];
 export const BOOKING_TIMES = ['09:00', '09:30', '10:00', '11:00', '11:30', '13:00', '14:00', '15:00', '16:00'];
 export const BUSY_TIMES = ['09:30', '13:00', '16:00'];
+
+/**
+ * Available time slots for a given day. Demo data has no real calendar, so
+ * availability is derived deterministically from the date — each day shows a
+ * different set of open slots. Replace with a query against working_hours +
+ * existing bookings when wired to Supabase.
+ */
+export function slotsForDay(day: Date): { time: string; available: boolean }[] {
+  const seed = day.getFullYear() * 366 + (day.getMonth() + 1) * 31 + day.getDate();
+  return BOOKING_TIMES.map((time, i) => ({
+    time,
+    available: (seed + i * 5) % 4 !== 0,
+  }));
+}
