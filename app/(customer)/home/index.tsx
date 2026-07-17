@@ -4,14 +4,14 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { CitySearchModal } from '../../src/components/CitySearchModal';
-import { ImageSlot } from '../../src/components/ImageSlot';
-import { Segmented } from '../../src/components/Segmented';
-import { Card, GlassBadge, Screen, SectionTitle } from '../../src/components/ui';
-import { useAuth } from '../../src/hooks/useAuth';
-import { fetchCategories, searchSalons } from '../../src/lib/api';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { Category, Salon } from '../../src/types';
+import { CitySearchModal } from '../../../src/components/CitySearchModal';
+import { ImageSlot } from '../../../src/components/ImageSlot';
+import { Segmented } from '../../../src/components/Segmented';
+import { Card, GlassBadge, Screen, SectionTitle } from '../../../src/components/ui';
+import { useAuth } from '../../../src/hooks/useAuth';
+import { fetchCategories, searchSalons } from '../../../src/lib/api';
+import { useTheme } from '../../../src/theme/ThemeContext';
+import { Category, Salon } from '../../../src/types';
 
 type AudienceTab = 'him' | 'her';
 
@@ -177,7 +177,7 @@ function CategoryGrid({
         {cats.map((c) => (
           <Pressable
             key={c.id}
-            onPress={() => router.push({ pathname: '/(customer)/salons', params: { catId: c.id, catName: c.name } })}
+            onPress={() => router.push({ pathname: '/(customer)/home/salons', params: { catId: c.id, catName: c.name } })}
             style={({ pressed }) => ({ width: '48.3%', marginBottom: 12, opacity: pressed ? 0.9 : 1 })}
           >
             <View style={{ borderRadius: 20, overflow: 'hidden' }}>
@@ -234,7 +234,12 @@ function SearchResults({ results, query }: { results: Salon[]; query: string }) 
       {results.map((s) => (
         <Card
           key={s.id}
-          onPress={() => router.push({ pathname: '/(customer)/salon/[id]', params: { id: s.id } })}
+          onPress={() =>
+            router.push({
+              pathname: '/(customer)/home/artists',
+              params: { salonId: s.id, salonName: s.name },
+            })
+          }
           style={{ padding: 12 }}
         >
           <View>

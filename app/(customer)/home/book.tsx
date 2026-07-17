@@ -1,13 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { BackButton, Card, PrimaryButton, Screen, SectionTitle } from '../../src/components/ui';
-import { useAuth } from '../../src/hooks/useAuth';
-import { createBooking, fetchArtistServices } from '../../src/lib/api';
-import { formatDuration, formatPrice, WEEKDAYS } from '../../src/lib/format';
-import { BOOKING_TIMES, BUSY_TIMES } from '../../src/lib/sampleData';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { Service } from '../../src/types';
+import { BackButton, Card, PrimaryButton, Screen, SectionTitle } from '../../../src/components/ui';
+import { useAuth } from '../../../src/hooks/useAuth';
+import { createBooking, fetchArtistServices } from '../../../src/lib/api';
+import { formatDuration, formatPrice, WEEKDAYS } from '../../../src/lib/format';
+import { BOOKING_TIMES, BUSY_TIMES } from '../../../src/lib/sampleData';
+import { useTheme } from '../../../src/theme/ThemeContext';
+import { Service } from '../../../src/types';
 
 function nextDays(count: number) {
   return Array.from({ length: count }, (_, i) => {
@@ -68,7 +68,7 @@ export default function Book() {
     });
     setBusy(false);
     router.replace({
-      pathname: '/(customer)/success',
+      pathname: '/(customer)/home/success',
       params: {
         salonName: salonName ?? '',
         artistName: artistName ?? '',

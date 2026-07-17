@@ -2,11 +2,11 @@ import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import { ImageSlot } from '../../src/components/ImageSlot';
-import { BackButton, Card, GlassBadge, Screen, ScreenTitle } from '../../src/components/ui';
-import { fetchSalons } from '../../src/lib/api';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { Salon } from '../../src/types';
+import { ImageSlot } from '../../../src/components/ImageSlot';
+import { BackButton, Card, GlassBadge, Screen, ScreenTitle } from '../../../src/components/ui';
+import { fetchSalons } from '../../../src/lib/api';
+import { useTheme } from '../../../src/theme/ThemeContext';
+import { Salon } from '../../../src/types';
 
 export default function SalonList() {
   const { theme } = useTheme();
@@ -27,7 +27,11 @@ export default function SalonList() {
           <Card
             key={s.id}
             onPress={() =>
-              router.push({ pathname: '/(customer)/salon/[id]', params: { id: s.id, catId: catId ?? '' } })
+              // Selecting a salon goes straight to the artist carousel
+              router.push({
+                pathname: '/(customer)/home/artists',
+                params: { salonId: s.id, salonName: s.name, catId: catId ?? '' },
+              })
             }
             style={{ padding: 12 }}
           >

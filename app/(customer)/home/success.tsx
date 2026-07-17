@@ -2,8 +2,8 @@ import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { Text, View } from 'react-native';
-import { PrimaryButton, Screen } from '../../src/components/ui';
-import { useTheme } from '../../src/theme/ThemeContext';
+import { PrimaryButton, Screen } from '../../../src/components/ui';
+import { useTheme } from '../../../src/theme/ThemeContext';
 
 export default function Success() {
   const { theme } = useTheme();

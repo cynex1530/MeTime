@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,8 +25,11 @@ function FloatingTabBar({
 }: BottomTabBarProps & { tabs: TabSpec[]; hiddenRoutes: string[] }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const currentRoute = state.routes[state.index]?.name ?? '';
-  if (hiddenRoutes.includes(currentRoute)) return null;
+  // A tab can hold a nested stack (Home, Bookings). Hide the bar on immersive
+  // screens by inspecting the deepest focused route, not just the tab name.
+  const activeRoute = state.routes[state.index];
+  const focused = activeRoute ? getFocusedRouteNameFromRoute(activeRoute) ?? activeRoute.name : '';
+  if (hiddenRoutes.includes(focused)) return null;
 
   return (
     <View
