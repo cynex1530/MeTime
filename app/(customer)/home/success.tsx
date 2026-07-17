@@ -15,6 +15,13 @@ export default function Success() {
     when?: string;
   }>();
 
+  // Collapse the home stack (index → salons → artists → success) back to the
+  // home index so leaving this screen — and returning to the Home tab later —
+  // shows the discovery page, not this confirmation again.
+  function resetHomeStack() {
+    if (router.canDismiss()) router.dismissAll();
+  }
+
   return (
     <Screen scroll={false} style={{ alignItems: 'center', justifyContent: 'center' }}>
       <View
@@ -38,9 +45,15 @@ export default function Success() {
       </Text>
 
       <View style={{ alignSelf: 'stretch', marginTop: 40, gap: 12 }}>
-        <PrimaryButton title="View my bookings" onPress={() => router.replace('/(customer)/bookings')} />
+        <PrimaryButton
+          title="View my bookings"
+          onPress={() => {
+            resetHomeStack();
+            router.navigate('/(customer)/bookings');
+          }}
+        />
         <Text
-          onPress={() => router.replace('/(customer)/home')}
+          onPress={resetHomeStack}
           style={{ textAlign: 'center', fontSize: 15, fontWeight: '600', color: theme.textSecondary, paddingVertical: 8 }}
         >
           Back to home
