@@ -1,4 +1,3 @@
-import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, Text, View } from 'react-native';
@@ -38,9 +37,11 @@ export default function ArtistSelect() {
 
   const selected = artists[index];
 
-  function onMomentumEnd(e: NativeSyntheticEvent<NativeScrollEvent>) {
+  // Auto-select the centered artist as the user swipes — no tap required.
+  function onScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
     const i = Math.round(e.nativeEvent.contentOffset.x / INTERVAL);
-    setIndex(Math.max(0, Math.min(i, artists.length - 1)));
+    const clamped = Math.max(0, Math.min(i, artists.length - 1));
+    setIndex((prev) => (prev === clamped ? prev : clamped));
   }
 
   function centerOn(i: number) {
@@ -71,7 +72,8 @@ export default function ArtistSelect() {
           showsHorizontalScrollIndicator={false}
           snapToInterval={INTERVAL}
           decelerationRate="fast"
-          onMomentumScrollEnd={onMomentumEnd}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           contentContainerStyle={{ paddingHorizontal: SIDE_PAD, gap: GAP, alignItems: 'center' }}
         >
           {artists.map((a, i) => {
@@ -91,28 +93,11 @@ export default function ArtistSelect() {
           })}
         </ScrollView>
 
-        {/* Selected name + rating + hint */}
+        {/* Selected name (rating & experience intentionally omitted here) */}
         <View style={{ alignItems: 'center', marginTop: 20 }}>
           <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: -0.4, color: theme.text }}>
             {selected?.display_name ?? ''}
           </Text>
-          {selected ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
-              <Text style={{ fontSize: 14, color: theme.textSecondary }}>
-                {[selected.title, selected.years_experience ? `${selected.years_experience} yrs` : null]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-              {selected.rating ? (
-                <>
-                  <Feather name="star" size={12} color={theme.iconStroke} />
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>
-                    {selected.rating.toFixed(1)}
-                  </Text>
-                </>
-              ) : null}
-            </View>
-          ) : null}
         </View>
       </View>
 
