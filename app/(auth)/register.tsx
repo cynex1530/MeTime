@@ -104,7 +104,7 @@ export default function Register() {
         />
         <SocialButton
           label="Continue with Apple"
-          icon={<AntDesign name="apple1" size={18} color="#fff" />}
+          icon={<AntDesign name="apple" size={18} color="#fff" />}
           bg="#1c1c1e"
           fg="#ffffff"
         />
