@@ -7,11 +7,11 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { CitySearchModal } from '../../src/components/CitySearchModal';
 import { ImageSlot } from '../../src/components/ImageSlot';
 import { Segmented } from '../../src/components/Segmented';
-import { GlassBadge, Screen, SectionTitle } from '../../src/components/ui';
+import { Card, GlassBadge, Screen, SectionTitle } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
-import { fetchCategories } from '../../src/lib/api';
+import { fetchCategories, searchSalons } from '../../src/lib/api';
 import { useTheme } from '../../src/theme/ThemeContext';
-import { Category } from '../../src/types';
+import { Category, Salon } from '../../src/types';
 
 type AudienceTab = 'him' | 'her';
 
@@ -22,12 +22,27 @@ export default function Home() {
   const [audience, setAudience] = useState<AudienceTab>('him');
   const [cats, setCats] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
+  const [results, setResults] = useState<Salon[]>([]);
   const [showCity, setShowCity] = useState(false);
   const autoLocated = useRef(false);
+  const searching = search.trim().length > 0;
 
   useEffect(() => {
     fetchCategories(audience).then(setCats);
   }, [audience]);
+
+  // Live-filter salons & services as the user types (debounced).
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) {
+      setResults([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      searchSalons(q).then(setResults);
+    }, 150);
+    return () => clearTimeout(t);
+  }, [search]);
 
   // If device location is already enabled, show the real city (no prompt).
   useEffect(() => {
@@ -49,11 +64,6 @@ export default function Home() {
       }
     })();
   }, [updateProfile]);
-
-  function submitSearch() {
-    const q = search.trim();
-    if (q) router.push({ pathname: '/(customer)/search', params: { q } });
-  }
 
   return (
     <Screen clearTabBar>
@@ -93,9 +103,13 @@ export default function Home() {
             placeholder="Search salons & services"
             placeholderTextColor={theme.textFaint}
             returnKeyType="search"
-            onSubmitEditing={submitSearch}
             style={{ flex: 1, fontSize: 16, color: theme.text, padding: 0 }}
           />
+          {searching ? (
+            <Pressable onPress={() => setSearch('')} hitSlop={8}>
+              <Feather name="x" size={18} color={theme.iconMuted} />
+            </Pressable>
+          ) : null}
         </View>
         <Pressable
           onPress={() => setShowCity(true)}
@@ -115,6 +129,36 @@ export default function Home() {
         </Pressable>
       </View>
 
+      {searching ? (
+        <SearchResults results={results} query={search.trim()} />
+      ) : (
+        <CategoryGrid cats={cats} audience={audience} setAudience={setAudience} />
+      )}
+
+      {/* City picker (opened by the location row or the filter button) */}
+      <CitySearchModal
+        visible={showCity}
+        current={profile?.city}
+        onClose={() => setShowCity(false)}
+        onSelect={(city) => updateProfile({ city })}
+      />
+    </Screen>
+  );
+}
+
+function CategoryGrid({
+  cats,
+  audience,
+  setAudience,
+}: {
+  cats: Category[];
+  audience: AudienceTab;
+  setAudience: (v: AudienceTab) => void;
+}) {
+  const { theme } = useTheme();
+  const router = useRouter();
+  return (
+    <>
       {/* For him / For her switch */}
       <View style={{ marginTop: 16 }}>
         <Segmented<AudienceTab>
@@ -178,14 +222,42 @@ export default function Home() {
           </Pressable>
         ))}
       </View>
+    </>
+  );
+}
 
-      {/* City picker (opened by the location row or the filter button) */}
-      <CitySearchModal
-        visible={showCity}
-        current={profile?.city}
-        onClose={() => setShowCity(false)}
-        onSelect={(city) => updateProfile({ city })}
-      />
-    </Screen>
+function SearchResults({ results, query }: { results: Salon[]; query: string }) {
+  const { theme } = useTheme();
+  const router = useRouter();
+  return (
+    <View style={{ marginTop: 20, gap: 14 }}>
+      {results.map((s) => (
+        <Card
+          key={s.id}
+          onPress={() => router.push({ pathname: '/(customer)/salon/[id]', params: { id: s.id } })}
+          style={{ padding: 12 }}
+        >
+          <View>
+            <ImageSlot uri={s.cover_image_url} aspectRatio={16 / 9} radius={14} caption={s.name} />
+            {s.tag ? <GlassBadge style={{ position: 'absolute', top: 10, left: 10 }}>{s.tag}</GlassBadge> : null}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+            <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: theme.text }}>{s.name}</Text>
+            <Feather name="star" size={14} color={theme.iconStroke} />
+            <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text, marginLeft: 4 }}>
+              {s.rating.toFixed(1)}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 3 }}>
+            {[s.distance, s.area, ...(s.sub_services ?? [])].filter(Boolean).join(' · ')}
+          </Text>
+        </Card>
+      ))}
+      {results.length === 0 ? (
+        <Text style={{ color: theme.textSecondary, textAlign: 'center', marginTop: 40 }}>
+          No salons or services match “{query}”.
+        </Text>
+      ) : null}
+    </View>
   );
 }

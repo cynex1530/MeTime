@@ -2,14 +2,14 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
-import { Card, Screen, ScreenTitle } from '../../src/components/ui';
-import { useAuth } from '../../src/hooks/useAuth';
-import { fetchMyBookings } from '../../src/lib/api';
-import { formatBookingDate, formatTime } from '../../src/lib/format';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { Booking } from '../../src/types';
+import { Card, Screen, ScreenTitle } from '../../../src/components/ui';
+import { useAuth } from '../../../src/hooks/useAuth';
+import { fetchMyBookings } from '../../../src/lib/api';
+import { formatBookingDate, formatTime } from '../../../src/lib/format';
+import { useTheme } from '../../../src/theme/ThemeContext';
+import { Booking } from '../../../src/types';
 
-export default function Bookings() {
+export default function BookingsList() {
   const { theme } = useTheme();
   const { profile } = useAuth();
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function Bookings() {
   const renderRow = (b: Booking) => (
     <Card
       key={b.id}
-      onPress={() => router.push({ pathname: '/(customer)/booking/[id]', params: { id: b.id } })}
+      onPress={() => router.push({ pathname: '/(customer)/bookings/[id]', params: { id: b.id } })}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}
     >
       <View
