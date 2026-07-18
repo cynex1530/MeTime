@@ -59,14 +59,16 @@ export function ScheduleScreen() {
       <View style={{ gap: 12 }}>
         {bookings.map((b) => {
           const d = new Date(b.starts_at);
+          const openReschedule = () => {
+            setReschId(b.id);
+            setSelDay(null);
+            setSelTime(null);
+          };
           return (
             <SwipeRow
               key={b.id}
-              onPress={() => {
-                setReschId(b.id);
-                setSelDay(null);
-                setSelTime(null);
-              }}
+              onPress={openReschedule}
+              onEdit={openReschedule}
               onDelete={() => {
                 cancelBooking(b.id);
                 setBookings((bs) => bs.filter((x) => x.id !== b.id));
