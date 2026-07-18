@@ -70,7 +70,7 @@ export function ScheduleScreen() {
           return (
             <SwipeRow
               key={b.id}
-              onPress={openReschedule}
+              // no row-tap handler: reschedule opens only from the Edit action
               onEdit={openReschedule}
               onDelete={() => setDelId(b.id)}
             >

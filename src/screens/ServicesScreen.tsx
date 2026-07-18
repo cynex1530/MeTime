@@ -26,6 +26,8 @@ export function ServicesScreen() {
   const [closeHour, setCloseHour] = useState('18:00');
   const [slotLen, setSlotLen] = useState(60); // pending selection
   const [savedSlotLen, setSavedSlotLen] = useState(60); // persisted value
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customVal, setCustomVal] = useState('');
   const [vacOn, setVacOn] = useState(false);
   const [timeOff, setTimeOff] = useState([{ id: 'vac1', label: 'Jul 20 – Jul 27' }]);
 
@@ -48,6 +50,10 @@ export function ServicesScreen() {
         setArtistId(artist.id);
         setSlotLen(artist.slot_minutes);
         setSavedSlotLen(artist.slot_minutes);
+        if (!SLOT_OPTIONS.some((o) => o.minutes === artist.slot_minutes)) {
+          setCustomOpen(true);
+          setCustomVal(String(artist.slot_minutes));
+        }
         setVacOn(artist.on_vacation);
         if (artist.open_hour) setOpenHour(artist.open_hour);
         if (artist.close_hour) setCloseHour(artist.close_hour);
@@ -200,11 +206,43 @@ export function ServicesScreen() {
       <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 10, marginTop: -6 }}>
         Every service uses this length. Changes apply from tomorrow.
       </Text>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {SLOT_OPTIONS.map((o) => (
-          <Chip key={o.minutes} label={o.label} selected={slotLen === o.minutes} onPress={() => setSlotLen(o.minutes)} />
+          <Chip
+            key={o.minutes}
+            label={o.label}
+            selected={!customOpen && slotLen === o.minutes}
+            onPress={() => {
+              setCustomOpen(false);
+              setSlotLen(o.minutes);
+            }}
+          />
         ))}
+        <Chip
+          label="Custom"
+          selected={customOpen}
+          onPress={() => {
+            setCustomOpen(true);
+            setCustomVal(String(slotLen));
+          }}
+        />
       </View>
+      {customOpen ? (
+        <View style={{ marginTop: 10 }}>
+          <Field
+            label="Custom length (minutes)"
+            value={customVal}
+            onChangeText={(v) => {
+              const digits = v.replace(/[^0-9]/g, '');
+              setCustomVal(digits);
+              const n = parseInt(digits, 10);
+              if (n > 0) setSlotLen(n);
+            }}
+            keyboardType="number-pad"
+            placeholder="e.g. 75"
+          />
+        </View>
+      ) : null}
       {slotLen !== savedSlotLen ? (
         <PrimaryButton title="Save slot length" onPress={saveSlotLength} style={{ marginTop: 12 }} />
       ) : null}
