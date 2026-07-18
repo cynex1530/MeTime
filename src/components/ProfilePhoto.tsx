@@ -1,15 +1,18 @@
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleProp, Text, View, ViewStyle } from 'react-native';
 import { uploadImage } from '../lib/upload';
 import { useTheme } from '../theme/ThemeContext';
 
+type Shape = 'circle' | 'portrait' | 'banner';
+
 /**
- * Profile photo control:
+ * Photo control used for avatars, discovery photos and location banners.
  * - empty  → dashed container with a "+" button; tapping requests photo-library
  *   permission (remembered by the OS) and opens the picker
- * - filled → the photo with a Replace and a Delete button at the top-right
+ * - filled → a small "Replace" pill and a Delete button inside the top-right
+ *   corner of the photo
  */
 export function ProfilePhoto({
   uri,
@@ -22,23 +25,28 @@ export function ProfilePhoto({
   uri?: string | null;
   userId: string;
   onChange: (uri: string | null) => void;
-  shape?: 'circle' | 'portrait';
+  shape?: Shape;
   size?: number;
   caption?: string;
 }) {
   const { theme } = useTheme();
   const [busy, setBusy] = useState(false);
 
-  const width = size;
-  const height = shape === 'portrait' ? Math.round(size * (4 / 3)) : size;
-  const radius = shape === 'circle' ? size / 2 : 20;
+  // Box + corner radius per shape. Banner fills the available width.
+  const box: StyleProp<ViewStyle> =
+    shape === 'banner'
+      ? { width: '100%', aspectRatio: 16 / 9, borderRadius: 16 }
+      : shape === 'portrait'
+        ? { width: size, height: Math.round(size * (4 / 3)), borderRadius: 20 }
+        : { width: size, height: size, borderRadius: size / 2 };
+  const radius = shape === 'banner' ? 16 : shape === 'portrait' ? 20 : size / 2;
 
   async function pick() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert(
         'Photo access needed',
-        'Allow Me Time to access your photos to set a picture. You can enable it in Settings.',
+        'Allow Me Time to access your photos to set an image. You can enable it in Settings.',
         [
           { text: 'Not now', style: 'cancel' },
           { text: 'Open Settings', onPress: () => Linking.openSettings() },
@@ -49,7 +57,7 @@ export function ProfilePhoto({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: shape === 'portrait' ? [3, 4] : [1, 1],
+      aspect: shape === 'banner' ? [16, 9] : shape === 'portrait' ? [3, 4] : [1, 1],
       quality: 0.8,
     });
     if (result.canceled || !result.assets?.length) return;
@@ -63,36 +71,17 @@ export function ProfilePhoto({
   }
 
   function confirmRemove() {
-    Alert.alert('Remove photo?', 'Your profile picture will be removed.', [
+    Alert.alert('Remove photo?', 'This image will be removed.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => onChange(null) },
     ]);
   }
 
-  const circleBtn = (icon: keyof typeof Feather.glyphMap, bg: string, fg: string, onPress: () => void) => (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        width: 34,
-        height: 34,
-        borderRadius: 17,
-        backgroundColor: bg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: theme.bg,
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      <Feather name={icon} size={16} color={fg} />
-    </Pressable>
-  );
-
   return (
-    <View style={{ width, height }}>
+    <View style={box}>
       {uri ? (
         <>
-          <Image source={{ uri }} style={{ width, height, borderRadius: radius }} />
+          <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: radius }} />
           {busy ? (
             <View
               style={{
@@ -110,18 +99,46 @@ export function ProfilePhoto({
               <ActivityIndicator color="#fff" />
             </View>
           ) : null}
-          {/* Replace (left) + Delete (right) at the top-right of the container */}
-          <View style={{ position: 'absolute', top: -8, right: -8, flexDirection: 'row', gap: 8 }}>
-            {circleBtn('refresh-cw', theme.inkSurface, theme.onInk, pick)}
-            {circleBtn('trash-2', theme.destructive, '#fff', confirmRemove)}
+          {/* Controls inside the top-right corner: Replace pill + Delete */}
+          <View style={{ position: 'absolute', top: 8, right: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Pressable
+              onPress={pick}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 10,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Feather name="refresh-cw" size={13} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Replace</Text>
+            </Pressable>
+            <Pressable
+              onPress={confirmRemove}
+              style={({ pressed }) => ({
+                width: 30,
+                height: 30,
+                borderRadius: 10,
+                backgroundColor: theme.destructive,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Feather name="trash-2" size={15} color="#fff" />
+            </Pressable>
           </View>
         </>
       ) : (
         <Pressable
           onPress={pick}
           style={{
-            width,
-            height,
+            width: '100%',
+            height: '100%',
             borderRadius: radius,
             backgroundColor: theme.placeholderFill,
             borderWidth: 1.5,

@@ -10,6 +10,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { Service } from '../types';
 
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const LUNCH_TIMES = ['11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30'];
+const BREAK_MINUTES = [15, 30, 45, 60, 90];
 
 export function ServicesScreen() {
   const { theme } = useTheme();
@@ -25,11 +27,16 @@ export function ServicesScreen() {
   const [vacOn, setVacOn] = useState(false);
   const [timeOff, setTimeOff] = useState([{ id: 'vac1', label: 'Jul 20 – Jul 27' }]);
 
+  // Lunch break applied to every working day (same time daily)
+  const [lunchBreak, setLunchBreak] = useState<{ start: string; minutes: number } | null>(null);
+
   const [showAdd, setShowAdd] = useState(false);
   const [hourPicker, setHourPicker] = useState<'open' | 'close' | null>(null);
   const [showAddVac, setShowAddVac] = useState(false);
+  const [showLunch, setShowLunch] = useState(false);
   const [f, setF] = useState({ name: '', price: '', dur: '45' });
   const [vacF, setVacF] = useState({ start: '', end: '' });
+  const [lunchF, setLunchF] = useState({ start: '12:00', minutes: 30 });
 
   useEffect(() => {
     (async () => {
@@ -143,6 +150,52 @@ export function ServicesScreen() {
         ))}
       </View>
 
+      <SectionTitle>Lunch break</SectionTitle>
+      {lunchBreak ? (
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Feather name="coffee" size={18} color={theme.iconStroke} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>
+              {lunchBreak.start} · {lunchBreak.minutes} min
+            </Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 1 }}>Every working day</Text>
+          </View>
+          <Pressable
+            hitSlop={8}
+            onPress={() => {
+              setLunchF(lunchBreak);
+              setShowLunch(true);
+            }}
+          >
+            <Feather name="edit-2" size={17} color={theme.iconStroke} />
+          </Pressable>
+          <Pressable hitSlop={8} onPress={() => setLunchBreak(null)}>
+            <Feather name="x" size={18} color={theme.iconStroke} />
+          </Pressable>
+        </Card>
+      ) : (
+        <Pressable
+          onPress={() => {
+            setLunchF({ start: '12:00', minutes: 30 });
+            setShowLunch(true);
+          }}
+          style={{
+            borderRadius: 16,
+            borderWidth: 1.5,
+            borderStyle: 'dashed',
+            borderColor: theme.hairlineStrong,
+            paddingVertical: 18,
+            alignItems: 'center',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <Feather name="plus" size={18} color={theme.iconStroke} />
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>Add lunch break</Text>
+        </Pressable>
+      )}
+
       <SectionTitle>Time off</SectionTitle>
       <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>Vacation mode</Text>
@@ -240,6 +293,45 @@ export function ServicesScreen() {
             }}
           />
         </View>
+      </Sheet>
+
+      {/* Lunch break sheet */}
+      <Sheet visible={showLunch} onClose={() => setShowLunch(false)}>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 4 }}>Lunch break</Text>
+        <Text style={{ fontSize: 14, color: theme.textSecondary, marginBottom: 16 }}>
+          Applied to every working day at the same time.
+        </Text>
+
+        <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary, marginBottom: 8 }}>
+          Start time
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+          {LUNCH_TIMES.map((t) => (
+            <Chip key={t} label={t} selected={lunchF.start === t} onPress={() => setLunchF((p) => ({ ...p, start: t }))} />
+          ))}
+        </View>
+
+        <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary, marginBottom: 8 }}>
+          Break length
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+          {BREAK_MINUTES.map((m) => (
+            <Chip
+              key={m}
+              label={`${m} min`}
+              selected={lunchF.minutes === m}
+              onPress={() => setLunchF((p) => ({ ...p, minutes: m }))}
+            />
+          ))}
+        </View>
+
+        <PrimaryButton
+          title="Save lunch break"
+          onPress={() => {
+            setLunchBreak({ start: lunchF.start, minutes: lunchF.minutes });
+            setShowLunch(false);
+          }}
+        />
       </Sheet>
     </Screen>
   );

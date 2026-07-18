@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { ImageSlot } from '../../src/components/ImageSlot';
+import { ProfilePhoto } from '../../src/components/ProfilePhoto';
 import { Segmented } from '../../src/components/Segmented';
 import { Sheet } from '../../src/components/Sheet';
 import { Card, Chip, Field, PrimaryButton, Screen, ScreenTitle } from '../../src/components/ui';
@@ -14,8 +15,8 @@ import { Audience, Salon } from '../../src/types';
 
 const AUDIENCE_LABEL: Record<Audience, string> = { him: 'Him', her: 'Her', both: 'Anyone' };
 
-type LocForm = { name: string; area: string; desc: string; cat: Audience; subs: string[] };
-const emptyForm: LocForm = { name: '', area: '', desc: '', cat: 'both', subs: [] };
+type LocForm = { name: string; area: string; desc: string; cat: Audience; subs: string[]; cover: string | null };
+const emptyForm: LocForm = { name: '', area: '', desc: '', cat: 'both', subs: [], cover: null };
 
 export default function Locations() {
   const { theme } = useTheme();
@@ -36,6 +37,7 @@ export default function Locations() {
         desc: loc.description ?? '',
         cat: loc.audience,
         subs: loc.sub_services ?? [],
+        cover: loc.cover_image_url ?? null,
       });
       setEditId(loc.id);
     } else {
@@ -52,6 +54,7 @@ export default function Locations() {
       description: f.desc.trim() || null,
       audience: f.cat,
       sub_services: f.subs,
+      cover_image_url: f.cover,
     };
     if (editId) {
       setLocs((ls) => ls.map((l) => (l.id === editId ? { ...l, ...patch } as Salon : l)));
@@ -61,7 +64,6 @@ export default function Locations() {
         id: `local-${Date.now()}`,
         owner_id: profile.id,
         city: profile.city,
-        cover_image_url: null,
         rating: 0,
         reviews_count: 0,
         tag: null,
@@ -155,6 +157,16 @@ export default function Locations() {
           {editId ? 'Edit location' : 'Add location'}
         </Text>
         <View style={{ gap: 12 }}>
+          <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary }}>
+            Store banner
+          </Text>
+          <ProfilePhoto
+            uri={f.cover}
+            userId={profile?.id ?? 'me'}
+            shape="banner"
+            caption="Add banner"
+            onChange={(cover) => setF((prev) => ({ ...prev, cover }))}
+          />
           <Field label="Name" value={f.name} onChangeText={(v) => setF({ ...f, name: v })} placeholder="Fade & Co." />
           <Field label="Area" value={f.area} onChangeText={(v) => setF({ ...f, area: v })} placeholder="Downtown · SF" />
           <Field
