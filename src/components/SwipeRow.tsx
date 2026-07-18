@@ -1,14 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { useTheme } from '../theme/ThemeContext';
 
 /**
  * Swipe-to-reveal actions row (artist/owner Schedule + manager Team).
- * - Swipe RIGHT reveals a dark "Edit" action on the left (when onEdit given).
- * - Swipe LEFT reveals a red "Delete" action on the right.
- * Both actions share the same size/shape and sit flush under the row.
+ * - Swipe RIGHT reveals a dark "Edit" action on the left (icon then label).
+ * - Swipe LEFT reveals a red "Delete" action on the right (label then icon).
+ * Both fill the row height and sit flush behind it, matching the design.
  */
 export function SwipeRow({
   children,
@@ -24,34 +24,53 @@ export function SwipeRow({
   const { theme } = useTheme();
   const ref = React.useRef<Swipeable>(null);
 
-  const action = (
-    side: 'left' | 'right',
-    icon: keyof typeof Feather.glyphMap,
-    label: string,
-    bg: string,
-    fg: string,
-    onPressAction: () => void
-  ) => (
-    <Pressable
-      onPress={() => {
-        ref.current?.close();
-        onPressAction();
-      }}
-      style={{
-        width: 108,
-        backgroundColor: bg,
-        borderRadius: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        marginLeft: side === 'right' ? 10 : 0,
-        marginRight: side === 'left' ? 10 : 0,
-      }}
-    >
-      <Feather name={icon} size={18} color={fg} />
-      <Text style={{ color: fg, fontSize: 14, fontWeight: '700' }}>{label}</Text>
-    </Pressable>
+  const leftEdit = () => (
+    // full-height wrapper guarantees the block matches the row height
+    <View style={{ justifyContent: 'center', marginRight: 10 }}>
+      <Pressable
+        onPress={() => {
+          ref.current?.close();
+          onEdit?.();
+        }}
+        style={{
+          flex: 1,
+          width: 118,
+          backgroundColor: theme.inkSurface,
+          borderRadius: 18,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+        }}
+      >
+        <Feather name="edit-2" size={18} color={theme.onInk} />
+        <Text style={{ color: theme.onInk, fontSize: 15, fontWeight: '700' }}>Edit</Text>
+      </Pressable>
+    </View>
+  );
+
+  const rightDelete = () => (
+    <View style={{ justifyContent: 'center', marginLeft: 10 }}>
+      <Pressable
+        onPress={() => {
+          ref.current?.close();
+          onDelete();
+        }}
+        style={{
+          flex: 1,
+          width: 118,
+          backgroundColor: theme.destructive,
+          borderRadius: 18,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+        }}
+      >
+        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Delete</Text>
+        <Feather name="trash-2" size={18} color="#fff" />
+      </Pressable>
+    </View>
   );
 
   return (
@@ -61,10 +80,8 @@ export function SwipeRow({
       overshootRight={false}
       leftThreshold={40}
       rightThreshold={40}
-      renderLeftActions={
-        onEdit ? () => action('left', 'edit-2', 'Edit', theme.inkSurface, theme.onInk, onEdit) : undefined
-      }
-      renderRightActions={() => action('right', 'trash-2', 'Delete', theme.destructive, '#fff', onDelete)}
+      renderLeftActions={onEdit ? leftEdit : undefined}
+      renderRightActions={rightDelete}
     >
       <Pressable onPress={onPress} disabled={!onPress}>
         {children}
