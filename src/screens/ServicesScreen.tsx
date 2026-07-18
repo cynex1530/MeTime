@@ -4,7 +4,7 @@ import { Pressable, Switch, Text, View } from 'react-native';
 import { Sheet } from '../components/Sheet';
 import { Card, Chip, Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
-import { deleteService, fetchMyArtistRow, fetchMyServices, upsertService } from '../lib/api';
+import { deleteService, fetchMyArtistRow, fetchMyServices } from '../lib/api';
 import { formatDuration, formatPrice, HOUR_OPTIONS, SLOT_OPTIONS } from '../lib/format';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeContext';
@@ -24,7 +24,8 @@ export function ServicesScreen() {
   });
   const [openHour, setOpenHour] = useState('09:00');
   const [closeHour, setCloseHour] = useState('18:00');
-  const [slotLen, setSlotLen] = useState(60);
+  const [slotLen, setSlotLen] = useState(60); // pending selection
+  const [savedSlotLen, setSavedSlotLen] = useState(60); // persisted value
   const [vacOn, setVacOn] = useState(false);
   const [timeOff, setTimeOff] = useState([{ id: 'vac1', label: 'Jul 20 – Jul 27' }]);
 
@@ -32,10 +33,11 @@ export function ServicesScreen() {
   const [lunchBreak, setLunchBreak] = useState<{ start: string; minutes: number } | null>(null);
 
   const [showAdd, setShowAdd] = useState(false);
+  const [editServiceId, setEditServiceId] = useState<string | null>(null); // null = adding
   const [hourPicker, setHourPicker] = useState<'open' | 'close' | null>(null);
   const [showAddVac, setShowAddVac] = useState(false);
   const [showLunch, setShowLunch] = useState(false);
-  const [f, setF] = useState({ name: '', price: '', dur: '45' });
+  const [f, setF] = useState({ name: '', price: '' });
   const [vacF, setVacF] = useState({ start: '', end: '' });
   const [lunchF, setLunchF] = useState({ start: '12:00', minutes: 30 });
 
@@ -45,6 +47,7 @@ export function ServicesScreen() {
       if (artist) {
         setArtistId(artist.id);
         setSlotLen(artist.slot_minutes);
+        setSavedSlotLen(artist.slot_minutes);
         setVacOn(artist.on_vacation);
         if (artist.open_hour) setOpenHour(artist.open_hour);
         if (artist.close_hour) setCloseHour(artist.close_hour);
@@ -63,21 +66,57 @@ export function ServicesScreen() {
     }
   }
 
-  function addService() {
-    const priceCents = Math.round(parseFloat(f.price || '0') * 100) || 0;
-    const dur = parseInt(f.dur, 10) || 45;
-    const svc: Service = {
-      id: `local-${Date.now()}`,
-      artist_id: artistId,
-      name: f.name.trim(),
-      duration_minutes: dur,
-      price_cents: priceCents,
-    };
-    if (!svc.name) return;
-    setServices((s) => [...s, svc]);
-    upsertService(svc);
+  function openAddService() {
+    setEditServiceId(null);
+    setF({ name: '', price: '' });
+    setShowAdd(true);
+  }
+
+  function openEditService(svc: Service) {
+    setEditServiceId(svc.id);
+    setF({ name: svc.name, price: String(svc.price_cents / 100) });
+    setShowAdd(true);
+  }
+
+  // Every service uses the artist's slot length as its duration.
+  async function saveService() {
+    const name = f.name.trim();
+    if (!name) return;
+    const price_cents = Math.round(parseFloat(f.price || '0') * 100) || 0;
+    const duration_minutes = slotLen;
+
+    if (editServiceId) {
+      setServices((list) =>
+        list.map((x) => (x.id === editServiceId ? { ...x, name, price_cents, duration_minutes } : x))
+      );
+      if (supabase && !editServiceId.startsWith('local')) {
+        await supabase.from('services').update({ name, price_cents, duration_minutes }).eq('id', editServiceId);
+      }
+    } else {
+      let created: Service = { id: `local-${Date.now()}`, artist_id: artistId, name, duration_minutes, price_cents };
+      if (supabase && artistId !== 'me') {
+        const { data } = await supabase
+          .from('services')
+          .insert({ artist_id: artistId, name, duration_minutes, price_cents })
+          .select()
+          .single();
+        if (data) created = data as Service;
+      }
+      setServices((s) => [...s, created]);
+    }
     setShowAdd(false);
-    setF({ name: '', price: '', dur: '45' });
+    setEditServiceId(null);
+    setF({ name: '', price: '' });
+  }
+
+  // Persist a new slot length + bring every service's duration in line with it.
+  async function saveSlotLength() {
+    setSavedSlotLen(slotLen);
+    await persistSchedule({ slot_minutes: slotLen });
+    setServices((list) => list.map((x) => ({ ...x, duration_minutes: slotLen })));
+    if (supabase && artistId !== 'me') {
+      await supabase.from('services').update({ duration_minutes: slotLen }).eq('artist_id', artistId);
+    }
   }
 
   return (
@@ -86,13 +125,14 @@ export function ServicesScreen() {
 
       <View style={{ gap: 10 }}>
         {services.map((s) => (
-          <Card key={s.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Card key={s.id} onPress={() => openEditService(s)} style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>{s.name}</Text>
               <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 2 }}>
                 {formatDuration(s.duration_minutes)} · {formatPrice(s.price_cents)}
               </Text>
             </View>
+            <Feather name="edit-2" size={16} color={theme.iconMuted} style={{ marginRight: 14 }} />
             <Pressable
               hitSlop={10}
               onPress={() => {
@@ -106,7 +146,7 @@ export function ServicesScreen() {
         ))}
         {/* dashed add-service tile */}
         <Pressable
-          onPress={() => setShowAdd(true)}
+          onPress={openAddService}
           style={{
             borderRadius: 16,
             borderWidth: 1.5,
@@ -157,19 +197,17 @@ export function ServicesScreen() {
       </View>
 
       <SectionTitle>Slot length</SectionTitle>
+      <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 10, marginTop: -6 }}>
+        Every service uses this length. Changes apply from tomorrow.
+      </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {SLOT_OPTIONS.map((o) => (
-          <Chip
-            key={o.minutes}
-            label={o.label}
-            selected={slotLen === o.minutes}
-            onPress={() => {
-              setSlotLen(o.minutes);
-              persistSchedule({ slot_minutes: o.minutes });
-            }}
-          />
+          <Chip key={o.minutes} label={o.label} selected={slotLen === o.minutes} onPress={() => setSlotLen(o.minutes)} />
         ))}
       </View>
+      {slotLen !== savedSlotLen ? (
+        <PrimaryButton title="Save slot length" onPress={saveSlotLength} style={{ marginTop: 12 }} />
+      ) : null}
 
       <SectionTitle>Lunch break</SectionTitle>
       {lunchBreak ? (
@@ -259,18 +297,23 @@ export function ServicesScreen() {
         </Pressable>
       </View>
 
-      {/* Add service sheet */}
+      {/* Add / edit service sheet */}
       <Sheet visible={showAdd} onClose={() => setShowAdd(false)}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>Add service</Text>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>
+          {editServiceId ? 'Edit service' : 'Add service'}
+        </Text>
         <View style={{ gap: 12 }}>
           <Field label="Service name" value={f.name} onChangeText={(v) => setF({ ...f, name: v })} placeholder="Classic Cut" />
           <Field label="Price ($)" value={f.price} onChangeText={(v) => setF({ ...f, price: v })} placeholder="35" keyboardType="decimal-pad" />
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {SLOT_OPTIONS.map((o) => (
-              <Chip key={o.minutes} label={o.label} selected={f.dur === String(o.minutes)} onPress={() => setF({ ...f, dur: String(o.minutes) })} />
-            ))}
-          </View>
-          <PrimaryButton title="Add service" disabled={!f.name.trim()} onPress={addService} />
+          {/* Duration is fixed to the slot length — not chosen per service */}
+          <Text style={{ fontSize: 13, color: theme.textSecondary }}>
+            Duration: {formatDuration(slotLen)} (your slot length)
+          </Text>
+          <PrimaryButton
+            title={editServiceId ? 'Save service' : 'Add service'}
+            disabled={!f.name.trim()}
+            onPress={saveService}
+          />
         </View>
       </Sheet>
 
