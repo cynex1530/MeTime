@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Sheet } from '../components/Sheet';
+import { ConfirmDialog, Sheet } from '../components/Sheet';
 import { SwipeRow } from '../components/SwipeRow';
 import { Card, PrimaryButton, Screen, ScreenTitle } from '../components/ui';
 import { fetchArtistSchedule, fetchMyArtistRow, cancelBooking, rescheduleBooking } from '../lib/api';
-import { formatTimeRange, WEEKDAYS } from '../lib/format';
+import { formatBookingDate, formatTimeRange, WEEKDAYS } from '../lib/format';
 import { BOOKING_TIMES, BUSY_TIMES } from '../lib/sampleData';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../theme/ThemeContext';
@@ -23,6 +23,7 @@ export function ScheduleScreen() {
   const { profile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reschId, setReschId] = useState<string | null>(null);
+  const [delId, setDelId] = useState<string | null>(null);
   const [selDay, setSelDay] = useState<Date | null>(null);
   const [selTime, setSelTime] = useState<string | null>(null);
 
@@ -69,10 +70,7 @@ export function ScheduleScreen() {
               key={b.id}
               onPress={openReschedule}
               onEdit={openReschedule}
-              onDelete={() => {
-                cancelBooking(b.id);
-                setBookings((bs) => bs.filter((x) => x.id !== b.id));
-              }}
+              onDelete={() => setDelId(b.id)}
             >
               <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 <View
@@ -107,6 +105,26 @@ export function ScheduleScreen() {
           </Text>
         ) : null}
       </View>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        visible={delId !== null}
+        title="Delete booking?"
+        message={(() => {
+          const b = bookings.find((x) => x.id === delId);
+          if (!b) return '';
+          return `${b.customer_name} · ${formatBookingDate(b.starts_at)}, ${formatTimeRange(b.starts_at, b.ends_at)}`;
+        })()}
+        confirmLabel="Delete"
+        onCancel={() => setDelId(null)}
+        onConfirm={() => {
+          if (delId) {
+            cancelBooking(delId);
+            setBookings((bs) => bs.filter((x) => x.id !== delId));
+          }
+          setDelId(null);
+        }}
+      />
 
       {/* Reschedule sheet */}
       <Sheet visible={reschId !== null} onClose={() => setReschId(null)}>

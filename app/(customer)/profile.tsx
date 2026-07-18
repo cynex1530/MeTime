@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { AvatarSlot } from '../../src/components/ImageSlot';
+import { ProfilePhoto } from '../../src/components/ProfilePhoto';
 import { Segmented } from '../../src/components/Segmented';
 import { Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -32,7 +32,14 @@ export default function CustomerProfile() {
     <Screen clearTabBar>
       <ScreenTitle title="Profile" />
       <View style={{ alignItems: 'center', marginBottom: 20 }}>
-        <AvatarSlot uri={profile?.avatar_url} size={92} name={profile?.full_name} />
+        <ProfilePhoto
+          uri={profile?.avatar_url}
+          userId={profile?.id ?? 'me'}
+          size={110}
+          shape="circle"
+          caption="Add photo"
+          onChange={(avatar_url) => updateProfile({ avatar_url })}
+        />
       </View>
 
       <View style={{ gap: 12 }}>

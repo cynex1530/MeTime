@@ -14,7 +14,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "app.metime.mobile",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Me Time uses your location to show salons and artists near you."
+        "NSLocationWhenInUseUsageDescription": "Me Time uses your location to show salons and artists near you.",
+        "NSPhotoLibraryUsageDescription": "Me Time needs access to your photos so you can set a profile picture."
       }
     },
     "android": {
@@ -34,6 +35,12 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Me Time uses your location to show salons and artists near you."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Me Time needs access to your photos so you can set a profile picture."
         }
       ]
     ],
