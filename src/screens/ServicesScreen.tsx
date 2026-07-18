@@ -305,7 +305,9 @@ export function ServicesScreen() {
         <Switch
           value={vacOn}
           onValueChange={setVacOn}
-          trackColor={{ true: theme.inkSurface, false: undefined }}
+          trackColor={{ true: theme.inkSurface, false: theme.isDark ? 'rgba(235,235,245,0.22)' : 'rgba(120,120,128,0.32)' }}
+          ios_backgroundColor={theme.isDark ? 'rgba(235,235,245,0.22)' : 'rgba(120,120,128,0.32)'}
+          thumbColor="#ffffff"
         />
       </Card>
       <View style={{ gap: 10, marginTop: 10 }}>
