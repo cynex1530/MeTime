@@ -5,7 +5,7 @@ import { SwipeRow } from '../components/SwipeRow';
 import { Card, PrimaryButton, Screen, ScreenTitle } from '../components/ui';
 import { fetchArtistSchedule, fetchMyArtistRow, cancelBooking, rescheduleBooking } from '../lib/api';
 import { formatBookingDate, formatTimeRange, WEEKDAYS } from '../lib/format';
-import { BOOKING_TIMES, BUSY_TIMES } from '../lib/sampleData';
+import { slotsForDay } from '../lib/sampleData';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../theme/ThemeContext';
 import { Booking } from '../types';
@@ -132,13 +132,18 @@ export function ScheduleScreen() {
         <Text style={{ fontSize: 14, color: theme.textSecondary, marginBottom: 16 }}>
           {resch?.customer_name} · {resch?.service_name}
         </Text>
+        <Text style={{ fontSize: 15, color: theme.textSecondary, marginBottom: 10 }}>Pick a new day</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
           {days.map((d) => {
             const sel = selDay?.toDateString() === d.toDateString();
             return (
               <Pressable
                 key={d.toISOString()}
-                onPress={() => setSelDay(d)}
+                // changing the day refreshes the slots below and clears the time
+                onPress={() => {
+                  setSelDay(d);
+                  setSelTime(null);
+                }}
                 style={{
                   width: 56,
                   paddingVertical: 10,
@@ -157,29 +162,35 @@ export function ScheduleScreen() {
             );
           })}
         </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-          {BOOKING_TIMES.map((t) => {
-            const busy = BUSY_TIMES.includes(t);
-            const sel = selTime === t;
-            return (
-              <Pressable
-                key={t}
-                disabled={busy}
-                onPress={() => setSelTime(t)}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 999,
-                  backgroundColor: sel ? theme.inkSurface : theme.bg,
-                  opacity: busy ? 0.35 : 1,
-                }}
-              >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: sel ? theme.onInk : theme.text }}>{t}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <PrimaryButton title="Confirm new time" disabled={!selDay || !selTime} onPress={confirmReschedule} />
+        {selDay ? (
+          <>
+            <Text style={{ fontSize: 15, color: theme.textSecondary, marginBottom: 10 }}>Pick a time</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+              {slotsForDay(selDay).map(({ time, available }) => {
+                const sel = selTime === time;
+                return (
+                  <Pressable
+                    key={time}
+                    disabled={!available}
+                    onPress={() => setSelTime(time)}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 999,
+                      backgroundColor: sel ? theme.inkSurface : theme.bg,
+                      opacity: available ? 1 : 0.35,
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: sel ? theme.onInk : theme.text }}>
+                      {time}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+        <PrimaryButton title="Save changes" disabled={!selDay || !selTime} onPress={confirmReschedule} />
       </Sheet>
     </Screen>
   );

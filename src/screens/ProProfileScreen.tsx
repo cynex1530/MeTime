@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { ImageSlot } from '../components/ImageSlot';
+import { ProfilePhoto } from '../components/ProfilePhoto';
 import { Segmented } from '../components/Segmented';
 import { Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
@@ -34,7 +34,16 @@ export function ProProfileScreen() {
     <Screen clearTabBar>
       <ScreenTitle title="My profile" subtitle="What customers see when they book you" />
 
-      <ImageSlot aspectRatio={3 / 4} caption="Discovery photo" radius={20} />
+      <View style={{ alignItems: 'center' }}>
+        <ProfilePhoto
+          uri={profile?.avatar_url}
+          userId={profile?.id ?? 'me'}
+          shape="portrait"
+          size={210}
+          caption="Discovery photo"
+          onChange={(avatar_url) => updateProfile({ avatar_url })}
+        />
+      </View>
 
       <View style={{ gap: 12, marginTop: 20 }}>
         <Field label="Display name" value={name} onChangeText={setName} autoCapitalize="words" />
