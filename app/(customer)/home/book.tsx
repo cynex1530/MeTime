@@ -174,15 +174,15 @@ export default function Book() {
                     paddingVertical: 12,
                     borderRadius: 14,
                     alignItems: 'center',
-                    backgroundColor: sel ? theme.inkSurface : theme.card,
-                    borderWidth: 1,
-                    borderColor: sel ? theme.inkSurface : theme.cardBorder,
+                    backgroundColor: theme.card,
+                    borderWidth: 1.5,
+                    borderColor: sel ? theme.text : theme.cardBorder,
                   }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: sel ? theme.onInk : theme.textSecondary }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: theme.textSecondary }}>
                     {WEEKDAYS[d.getDay()].toUpperCase()}
                   </Text>
-                  <Text style={{ fontSize: 17, fontWeight: '800', color: sel ? theme.onInk : theme.text, marginTop: 2 }}>
+                  <Text style={{ fontSize: 17, fontWeight: '800', color: theme.text, marginTop: 2 }}>
                     {d.getDate()}
                   </Text>
                 </Pressable>
@@ -208,13 +208,13 @@ export default function Book() {
                     paddingHorizontal: 18,
                     paddingVertical: 11,
                     borderRadius: 999,
-                    backgroundColor: sel ? theme.inkSurface : theme.card,
-                    borderWidth: 1,
-                    borderColor: sel ? theme.inkSurface : theme.cardBorder,
+                    backgroundColor: theme.card,
+                    borderWidth: 1.5,
+                    borderColor: sel ? theme.text : theme.cardBorder,
                     opacity: available ? 1 : 0.35,
                   }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: sel ? theme.onInk : theme.text }}>{time}</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>{time}</Text>
                 </Pressable>
               );
             })}

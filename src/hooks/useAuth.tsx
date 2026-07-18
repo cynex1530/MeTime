@@ -73,8 +73,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await AsyncStorage.setItem(DEMO_KEY, JSON.stringify(demo));
           return null;
         }
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        return error ? error.message : null;
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return error.message;
+        // Load the profile before returning so the caller can navigate straight
+        // into the app — otherwise the redirect races the auth listener and
+        // bounces back to the login screen.
+        if (data.user) await loadSupabaseProfile(data.user.id);
+        return null;
       },
 
       async signUp(fullName, email, password, role) {
@@ -94,12 +99,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         // The on_auth_user_created DB trigger creates the profile row from
         // this metadata (full_name + role).
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { data: { full_name: fullName, role } },
         });
-        return error ? error.message : null;
+        if (error) return error.message;
+        // With email confirmation off there's a session immediately; load the
+        // profile so navigation into the app doesn't race the auth listener.
+        if (data.user && data.session) await loadSupabaseProfile(data.user.id);
+        return null;
       },
 
       async signOut() {

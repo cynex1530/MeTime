@@ -38,6 +38,7 @@ export default function CustomerProfile() {
           size={110}
           shape="circle"
           caption="Add photo"
+          showReplace={false}
           onChange={(avatar_url) => updateProfile({ avatar_url })}
         />
       </View>

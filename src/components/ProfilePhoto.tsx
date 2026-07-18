@@ -21,6 +21,7 @@ export function ProfilePhoto({
   shape = 'circle',
   size = 120,
   caption = 'Add photo',
+  showReplace = true,
 }: {
   uri?: string | null;
   userId: string;
@@ -28,6 +29,7 @@ export function ProfilePhoto({
   shape?: Shape;
   size?: number;
   caption?: string;
+  showReplace?: boolean;
 }) {
   const { theme } = useTheme();
   const [busy, setBusy] = useState(false);
@@ -101,22 +103,24 @@ export function ProfilePhoto({
           ) : null}
           {/* Controls inside the top-right corner: Replace pill + Delete */}
           <View style={{ position: 'absolute', top: 8, right: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              onPress={pick}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 10,
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                opacity: pressed ? 0.8 : 1,
-              })}
-            >
-              <Feather name="refresh-cw" size={13} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Replace</Text>
-            </Pressable>
+            {showReplace ? (
+              <Pressable
+                onPress={pick}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <Feather name="refresh-cw" size={13} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Replace</Text>
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={confirmRemove}
               style={({ pressed }) => ({
