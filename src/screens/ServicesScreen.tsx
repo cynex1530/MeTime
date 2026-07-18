@@ -6,6 +6,7 @@ import { Card, Chip, Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } f
 import { useAuth } from '../hooks/useAuth';
 import { deleteService, fetchMyArtistRow, fetchMyServices, upsertService } from '../lib/api';
 import { formatDuration, formatPrice, HOUR_OPTIONS, SLOT_OPTIONS } from '../lib/format';
+import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeContext';
 import { Service } from '../types';
 
@@ -45,10 +46,22 @@ export function ServicesScreen() {
         setArtistId(artist.id);
         setSlotLen(artist.slot_minutes);
         setVacOn(artist.on_vacation);
+        if (artist.open_hour) setOpenHour(artist.open_hour);
+        if (artist.close_hour) setCloseHour(artist.close_hour);
+        if (artist.lunch_start && artist.lunch_minutes) {
+          setLunchBreak({ start: artist.lunch_start, minutes: artist.lunch_minutes });
+        }
       }
       setServices(await fetchMyServices(artist?.id ?? null));
     })();
   }, [profile]);
+
+  // Persist schedule settings so the customer booking flow can build slots.
+  async function persistSchedule(patch: Record<string, unknown>) {
+    if (supabase && artistId && artistId !== 'me') {
+      await supabase.from('artists').update(patch).eq('id', artistId);
+    }
+  }
 
   function addService() {
     const priceCents = Math.round(parseFloat(f.price || '0') * 100) || 0;
@@ -146,7 +159,15 @@ export function ServicesScreen() {
       <SectionTitle>Slot length</SectionTitle>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {SLOT_OPTIONS.map((o) => (
-          <Chip key={o.minutes} label={o.label} selected={slotLen === o.minutes} onPress={() => setSlotLen(o.minutes)} />
+          <Chip
+            key={o.minutes}
+            label={o.label}
+            selected={slotLen === o.minutes}
+            onPress={() => {
+              setSlotLen(o.minutes);
+              persistSchedule({ slot_minutes: o.minutes });
+            }}
+          />
         ))}
       </View>
 
@@ -169,7 +190,13 @@ export function ServicesScreen() {
           >
             <Feather name="edit-2" size={17} color={theme.iconStroke} />
           </Pressable>
-          <Pressable hitSlop={8} onPress={() => setLunchBreak(null)}>
+          <Pressable
+            hitSlop={8}
+            onPress={() => {
+              setLunchBreak(null);
+              persistSchedule({ lunch_start: null, lunch_minutes: null });
+            }}
+          >
             <Feather name="x" size={18} color={theme.iconStroke} />
           </Pressable>
         </Card>
@@ -259,8 +286,13 @@ export function ServicesScreen() {
               <Pressable
                 key={h}
                 onPress={() => {
-                  if (hourPicker === 'open') setOpenHour(h);
-                  else setCloseHour(h);
+                  if (hourPicker === 'open') {
+                    setOpenHour(h);
+                    persistSchedule({ open_hour: h });
+                  } else {
+                    setCloseHour(h);
+                    persistSchedule({ close_hour: h });
+                  }
                   setHourPicker(null);
                 }}
                 style={{
@@ -329,6 +361,7 @@ export function ServicesScreen() {
           title="Save lunch break"
           onPress={() => {
             setLunchBreak({ start: lunchF.start, minutes: lunchF.minutes });
+            persistSchedule({ lunch_start: lunchF.start, lunch_minutes: lunchF.minutes });
             setShowLunch(false);
           }}
         />

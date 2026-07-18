@@ -5,10 +5,10 @@ import { SwipeRow } from '../components/SwipeRow';
 import { Card, PrimaryButton, Screen, ScreenTitle } from '../components/ui';
 import { fetchArtistSchedule, fetchMyArtistRow, cancelBooking, rescheduleBooking } from '../lib/api';
 import { formatBookingDate, formatTimeRange, WEEKDAYS } from '../lib/format';
-import { slotsForDay } from '../lib/sampleData';
+import { generateDaySlots } from '../lib/schedule';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../theme/ThemeContext';
-import { Booking } from '../types';
+import { Artist, Booking } from '../types';
 
 function nextDays(count: number) {
   return Array.from({ length: count }, (_, i) => {
@@ -22,6 +22,7 @@ export function ScheduleScreen() {
   const { theme } = useTheme();
   const { profile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [artist, setArtist] = useState<Artist | null>(null);
   const [reschId, setReschId] = useState<string | null>(null);
   const [delId, setDelId] = useState<string | null>(null);
   const [selDay, setSelDay] = useState<Date | null>(null);
@@ -29,8 +30,9 @@ export function ScheduleScreen() {
 
   useEffect(() => {
     (async () => {
-      const artist = profile ? await fetchMyArtistRow(profile.id) : null;
-      setBookings(await fetchArtistSchedule(artist?.id ?? null));
+      const a = profile ? await fetchMyArtistRow(profile.id) : null;
+      setArtist(a);
+      setBookings(await fetchArtistSchedule(a?.id ?? null));
     })();
   }, [profile]);
 
@@ -166,7 +168,13 @@ export function ScheduleScreen() {
           <>
             <Text style={{ fontSize: 15, color: theme.textSecondary, marginBottom: 10 }}>Pick a time</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-              {slotsForDay(selDay).map(({ time, available }) => {
+              {generateDaySlots(
+                artist?.open_hour,
+                artist?.close_hour,
+                artist?.slot_minutes ?? 60,
+                artist?.lunch_start,
+                artist?.lunch_minutes
+              ).map(({ time, available }) => {
                 const sel = selTime === time;
                 return (
                   <Pressable

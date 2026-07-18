@@ -51,6 +51,10 @@ export type Artist = {
   photo_url: string | null;
   slot_minutes: number;
   on_vacation: boolean;
+  open_hour?: string;
+  close_hour?: string;
+  lunch_start?: string | null;
+  lunch_minutes?: number | null;
 };
 
 export type Service = {

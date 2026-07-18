@@ -87,6 +87,18 @@ export async function fetchSalonArtists(salonId: string): Promise<Artist[]> {
   return sampleArtistsForSalon(salonId);
 }
 
+export async function fetchArtistById(id: string): Promise<Artist | null> {
+  if (supabase) {
+    const { data } = await supabase.from('artists').select('*').eq('id', id).maybeSingle();
+    if (data) return data as Artist;
+  }
+  return (
+    SAMPLE_ARTISTS.find((a) => a.id === id) ??
+    sampleArtistsForSalon('fade').find((a) => a.id === id) ??
+    null
+  );
+}
+
 export async function fetchArtistServices(artistId: string, categoryId?: string | null): Promise<Service[]> {
   if (supabase) {
     const { data } = await supabase

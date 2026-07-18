@@ -3,11 +3,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { BackButton, Card, PrimaryButton, Screen, SectionTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
-import { createBooking, fetchArtistServices } from '../../../src/lib/api';
+import { createBooking, fetchArtistById, fetchArtistServices } from '../../../src/lib/api';
 import { formatDuration, formatPrice, WEEKDAYS } from '../../../src/lib/format';
-import { slotsForDay } from '../../../src/lib/sampleData';
+import { generateDaySlots } from '../../../src/lib/schedule';
 import { useTheme } from '../../../src/theme/ThemeContext';
-import { Service } from '../../../src/types';
+import { Artist, Service } from '../../../src/types';
 
 function nextDays(count: number) {
   return Array.from({ length: count }, (_, i) => {
@@ -36,23 +36,32 @@ export default function Book() {
   }>();
 
   const [services, setServices] = useState<Service[]>([]);
+  const [artist, setArtist] = useState<Artist | null>(null);
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [selDay, setSelDay] = useState<Date | null>(null);
   const [selTime, setSelTime] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (artistId) fetchArtistServices(artistId, catId).then(setServices);
+    if (artistId) {
+      fetchArtistServices(artistId, catId).then(setServices);
+      fetchArtistById(artistId).then(setArtist);
+    }
   }, [artistId, catId]);
 
   const days = useMemo(() => nextDays(8), []);
-  // Which days have at least one open slot (fully booked days are disabled).
-  const dayAvailability = useMemo(
-    () => days.map((d) => slotsForDay(d).some((s) => s.available)),
-    [days]
+  // Slots come from the artist's open/close hours, slot length and lunch break.
+  const daySlots = useMemo(
+    () =>
+      generateDaySlots(
+        artist?.open_hour,
+        artist?.close_hour,
+        artist?.slot_minutes ?? 60,
+        artist?.lunch_start,
+        artist?.lunch_minutes
+      ),
+    [artist]
   );
-  // Slots for the currently selected day.
-  const daySlots = useMemo(() => (selDay ? slotsForDay(selDay) : []), [selDay]);
 
   const service = services.find((s) => s.id === serviceId);
   const canConfirm = !!service && !!selDay && !!selTime;
@@ -154,13 +163,11 @@ export default function Book() {
         <>
           <SectionTitle>Day</SectionTitle>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {days.map((d, i) => {
+            {days.map((d) => {
               const sel = selDay?.toDateString() === d.toDateString();
-              const full = !dayAvailability[i];
               return (
                 <Pressable
                   key={d.toISOString()}
-                  disabled={full}
                   onPress={() => pickDay(d)}
                   style={{
                     width: 62,
@@ -170,7 +177,6 @@ export default function Book() {
                     backgroundColor: sel ? theme.inkSurface : theme.card,
                     borderWidth: 1,
                     borderColor: sel ? theme.inkSurface : theme.cardBorder,
-                    opacity: full ? 0.35 : 1,
                   }}
                 >
                   <Text style={{ fontSize: 11, fontWeight: '700', color: sel ? theme.onInk : theme.textSecondary }}>
