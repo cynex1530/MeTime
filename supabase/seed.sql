@@ -14,30 +14,35 @@
 -- creates the matching public.profiles rows)
 -- ----------------------------------------------------------------------------
 
+-- NOTE: the token columns (confirmation_token, recovery_token, email_change,
+-- email_change_token_new) MUST be '' and not NULL — GoTrue (Supabase Auth)
+-- scans them into non-nullable strings on login and returns a 500
+-- (unexpected_failure) if they are NULL.
 insert into auth.users
   (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-   raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+   confirmation_token, recovery_token, email_change, email_change_token_new)
 values
   ('00000000-0000-0000-0000-000000000000', '10000000-0000-0000-0000-000000000001',
    'authenticated', 'authenticated', 'customer@metime.app',
    crypt('password123', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}',
-   '{"full_name":"Alex Morgan","role":"customer"}', now(), now()),
+   '{"full_name":"Alex Morgan","role":"customer"}', now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '10000000-0000-0000-0000-000000000002',
    'authenticated', 'authenticated', 'marco@fadeco.com',
    crypt('password123', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}',
-   '{"full_name":"Marco Rossi","role":"artist"}', now(), now()),
+   '{"full_name":"Marco Rossi","role":"artist"}', now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '10000000-0000-0000-0000-000000000003',
    'authenticated', 'authenticated', 'owner@metime.app',
    crypt('password123', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}',
-   '{"full_name":"Jordan Lee","role":"manager"}', now(), now()),
+   '{"full_name":"Jordan Lee","role":"manager"}', now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '10000000-0000-0000-0000-000000000004',
    'authenticated', 'authenticated', 'owner2@metime.app',
    crypt('password123', gen_salt('bf')), now(),
    '{"provider":"email","providers":["email"]}',
-   '{"full_name":"Sam Rivera","role":"manager"}', now(), now());
+   '{"full_name":"Sam Rivera","role":"manager"}', now(), now(), '', '', '', '');
 
 insert into auth.identities
   (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
