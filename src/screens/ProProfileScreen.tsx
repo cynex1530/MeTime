@@ -4,9 +4,11 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { ProfilePhoto } from '../components/ProfilePhoto';
 import { Segmented } from '../components/Segmented';
-import { Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../components/ui';
+import { Card, Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
+import { assignSelfToSalon, fetchMyArtistRow, fetchMyLocations } from '../lib/api';
 import { useTheme } from '../theme/ThemeContext';
+import { Salon } from '../types';
 
 /**
  * Shared Profile screen for artist + manager roles.
@@ -23,10 +25,36 @@ export function ProProfileScreen() {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
 
+  // Manager-only: which of their salons they personally work at
+  const isManager = profile?.role === 'manager';
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [assignedId, setAssignedId] = useState<string | null>(null);
+  const [assignOpen, setAssignOpen] = useState(false);
+
   useEffect(() => {
     setName(profile?.full_name ?? '');
     setEmail(profile?.email ?? '');
   }, [profile]);
+
+  useEffect(() => {
+    if (!isManager || !profile) return;
+    (async () => {
+      const [locs, artistRow] = await Promise.all([
+        fetchMyLocations(profile.id),
+        fetchMyArtistRow(profile.id),
+      ]);
+      setSalons(locs);
+      setAssignedId(artistRow?.salon_id ?? null);
+    })();
+  }, [isManager, profile]);
+
+  const assignedName = salons.find((s) => s.id === assignedId)?.name ?? 'No salon selected';
+
+  async function assignTo(salonId: string) {
+    setAssignedId(salonId);
+    setAssignOpen(false);
+    if (profile) await assignSelfToSalon(profile.id, salonId, name || profile.full_name, email || profile.email);
+  }
 
   const dirty = name !== (profile?.full_name ?? '') || email !== (profile?.email ?? '') || password.length > 0;
 
@@ -67,6 +95,69 @@ export function ProProfileScreen() {
           />
         ) : null}
       </View>
+
+      {isManager ? (
+        <>
+          <SectionTitle>Assigned salon</SectionTitle>
+          <Card
+            onPress={() => salons.length > 0 && setAssignOpen((v) => !v)}
+            style={{ padding: 0, overflow: 'hidden' }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '600',
+                    letterSpacing: 0.5,
+                    textTransform: 'uppercase',
+                    color: theme.textTertiary,
+                  }}
+                >
+                  Assigned to
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text, marginTop: 3 }}>
+                  {assignedName}
+                </Text>
+              </View>
+              <Feather name={assignOpen ? 'chevron-up' : 'chevron-down'} size={18} color={theme.iconMuted} />
+            </View>
+            {assignOpen
+              ? salons.map((s, i) => (
+                  <Pressable
+                    key={s.id}
+                    onPress={() => assignTo(s.id)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingHorizontal: 16,
+                      paddingVertical: 14,
+                      borderTopWidth: 1,
+                      borderTopColor: theme.hairline,
+                    }}
+                  >
+                    <Text style={{ fontSize: 16, color: theme.text }}>{s.name}</Text>
+                    {assignedId === s.id ? <Feather name="check" size={18} color={theme.iconStroke} /> : null}
+                  </Pressable>
+                ))
+              : null}
+          </Card>
+          {salons.length === 0 ? (
+            <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 8 }}>
+              Add a location first to assign yourself to it.
+            </Text>
+          ) : null}
+        </>
+      ) : null}
 
       <SectionTitle>Appearance</SectionTitle>
       <Segmented

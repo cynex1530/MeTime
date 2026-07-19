@@ -214,6 +214,35 @@ export async function fetchMyLocations(ownerId: string): Promise<Salon[]> {
   return SAMPLE_LOCATIONS;
 }
 
+/**
+ * The owner is also a bookable pro. Assign them to one of their salons by
+ * upserting their own artist row (linked to their profile).
+ */
+export async function assignSelfToSalon(
+  profileId: string,
+  salonId: string,
+  displayName: string,
+  email: string | null
+): Promise<void> {
+  if (!supabase) return;
+  const { data: existing } = await supabase
+    .from('artists')
+    .select('id')
+    .eq('profile_id', profileId)
+    .maybeSingle();
+  if (existing) {
+    await supabase.from('artists').update({ salon_id: salonId }).eq('id', existing.id);
+  } else {
+    await supabase.from('artists').insert({
+      salon_id: salonId,
+      profile_id: profileId,
+      display_name: displayName || 'Owner',
+      email,
+      title: 'Owner',
+    });
+  }
+}
+
 export async function fetchMyTeam(salonIds: string[]): Promise<Artist[]> {
   if (supabase && salonIds.length && !salonIds.includes('l1')) {
     const { data } = await supabase.from('artists').select('*').in('salon_id', salonIds).eq('is_active', true);
