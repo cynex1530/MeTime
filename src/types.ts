@@ -33,6 +33,8 @@ export type Salon = {
   sub_services: string[];
   rating: number;
   reviews_count: number;
+  latitude?: number | null;
+  longitude?: number | null;
   distance?: string; // computed client-side; sample data ships a value
   category_ids?: string[];
 };

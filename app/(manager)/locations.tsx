@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { ImageSlot } from '../../src/components/ImageSlot';
+import { PlaceAutocompleteField } from '../../src/components/PlaceAutocompleteField';
 import { ProfilePhoto } from '../../src/components/ProfilePhoto';
 import { Segmented } from '../../src/components/Segmented';
 import { Sheet } from '../../src/components/Sheet';
@@ -15,8 +16,17 @@ import { Audience, Salon } from '../../src/types';
 
 const AUDIENCE_LABEL: Record<Audience, string> = { him: 'Him', her: 'Her', both: 'Anyone' };
 
-type LocForm = { name: string; area: string; desc: string; cat: Audience; subs: string[]; cover: string | null };
-const emptyForm: LocForm = { name: '', area: '', desc: '', cat: 'both', subs: [], cover: null };
+type LocForm = {
+  name: string;
+  area: string;
+  desc: string;
+  cat: Audience;
+  subs: string[];
+  cover: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+const emptyForm: LocForm = { name: '', area: '', desc: '', cat: 'both', subs: [], cover: null, lat: null, lng: null };
 
 export default function Locations() {
   const { theme } = useTheme();
@@ -38,6 +48,8 @@ export default function Locations() {
         cat: loc.audience,
         subs: loc.sub_services ?? [],
         cover: loc.cover_image_url ?? null,
+        lat: loc.latitude ?? null,
+        lng: loc.longitude ?? null,
       });
       setEditId(loc.id);
     } else {
@@ -55,6 +67,8 @@ export default function Locations() {
       audience: f.cat,
       sub_services: f.subs,
       cover_image_url: f.cover,
+      latitude: f.lat,
+      longitude: f.lng,
     };
     if (editId) {
       setLocs((ls) => ls.map((l) => (l.id === editId ? { ...l, ...patch } as Salon : l)));
@@ -168,7 +182,13 @@ export default function Locations() {
             onChange={(cover) => setF((prev) => ({ ...prev, cover }))}
           />
           <Field label="Name" value={f.name} onChangeText={(v) => setF({ ...f, name: v })} placeholder="Fade & Co." />
-          <Field label="Area" value={f.area} onChangeText={(v) => setF({ ...f, area: v })} placeholder="Downtown · SF" />
+          <PlaceAutocompleteField
+            label="Address / area"
+            value={f.area}
+            placeholder="Start typing a city or street…"
+            onChangeText={(v) => setF((prev) => ({ ...prev, area: v }))}
+            onSelect={(address, lat, lng) => setF((prev) => ({ ...prev, area: address, lat, lng }))}
+          />
           <Field
             label="Description"
             value={f.desc}
