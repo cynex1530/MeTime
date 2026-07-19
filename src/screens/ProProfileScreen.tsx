@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ProfilePhoto } from '../components/ProfilePhoto';
 import { Segmented } from '../components/Segmented';
 import { Card, Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../components/ui';
@@ -96,41 +97,41 @@ export function ProProfileScreen() {
         ) : null}
       </View>
 
-      {/* Dashboard — opens the full-screen stats view */}
+      {/* Dashboard — personal stats (dark) */}
       <Pressable
         onPress={() => router.push('/dashboard')}
         style={({ pressed }) => ({
           marginTop: 16,
-          backgroundColor: theme.card,
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: theme.cardBorder,
-          paddingVertical: 16,
-          paddingHorizontal: 16,
+          backgroundColor: theme.inkSurface,
+          borderRadius: 18,
+          paddingVertical: 18,
+          paddingHorizontal: 18,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? 0.9 : 1,
         })}
       >
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 12,
-            backgroundColor: theme.inkSurface,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Feather name="bar-chart-2" size={18} color={theme.onInk} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>Dashboard</Text>
-          <Text style={{ fontSize: 13, color: theme.textSecondary }}>Revenue, bookings & client stats</Text>
-        </View>
-        <Feather name="chevron-right" size={18} color={theme.iconMuted} />
+        <Feather name="bar-chart-2" size={20} color={theme.onInk} />
+        <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: theme.onInk }}>Dashboard</Text>
+        <Feather name="chevron-right" size={20} color={theme.onInk} />
       </Pressable>
+
+      {/* Salon Dashboard — salon-wide analytics (purple), owners only */}
+      {isManager ? (
+        <Pressable onPress={() => router.push('/salon-dashboard')} style={({ pressed }) => ({ marginTop: 12, opacity: pressed ? 0.9 : 1 })}>
+          <LinearGradient
+            colors={['#7B6CF0', '#6C5CE7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ borderRadius: 18, paddingVertical: 18, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+          >
+            <Feather name="grid" size={20} color="#fff" />
+            <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: '#fff' }}>Salon Dashboard</Text>
+            <Feather name="chevron-right" size={20} color="#fff" />
+          </LinearGradient>
+        </Pressable>
+      ) : null}
 
       {isManager ? (
         <>
