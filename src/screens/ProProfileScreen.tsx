@@ -96,6 +96,42 @@ export function ProProfileScreen() {
         ) : null}
       </View>
 
+      {/* Dashboard — opens the full-screen stats view */}
+      <Pressable
+        onPress={() => router.push('/dashboard')}
+        style={({ pressed }) => ({
+          marginTop: 16,
+          backgroundColor: theme.card,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: theme.cardBorder,
+          paddingVertical: 16,
+          paddingHorizontal: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 12,
+            backgroundColor: theme.inkSurface,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Feather name="bar-chart-2" size={18} color={theme.onInk} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>Dashboard</Text>
+          <Text style={{ fontSize: 13, color: theme.textSecondary }}>Revenue, bookings & client stats</Text>
+        </View>
+        <Feather name="chevron-right" size={18} color={theme.iconMuted} />
+      </Pressable>
+
       {isManager ? (
         <>
           <SectionTitle>Assigned salon</SectionTitle>

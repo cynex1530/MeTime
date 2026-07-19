@@ -182,6 +182,15 @@ export async function fetchArtistSchedule(artistId: string | null): Promise<Book
   return SAMPLE_SCHEDULE;
 }
 
+/** All of an artist's bookings (any status/date) — for the dashboard stats. */
+export async function fetchArtistAllBookings(artistId: string | null): Promise<Booking[]> {
+  if (supabase && artistId) {
+    const { data } = await supabase.from('bookings').select('*').eq('artist_id', artistId);
+    if (data) return data as Booking[];
+  }
+  return [];
+}
+
 export async function fetchMyServices(artistId: string | null): Promise<Service[]> {
   if (supabase && artistId) {
     const { data } = await supabase.from('services').select('*').eq('artist_id', artistId).eq('is_active', true);
