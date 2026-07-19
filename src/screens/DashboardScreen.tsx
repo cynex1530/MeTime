@@ -3,7 +3,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { RingProgress } from '../components/RingProgress';
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
-import { fetchArtistAllBookings, fetchMyArtistRow } from '../lib/api';
+import { fetchStatsBookings } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { BookingKey, computeStats, DEMO_STATS, formatMoney, RevenueKey, Stats } from '../lib/stats';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -75,15 +76,20 @@ function Pills<T extends string>({
 export function DashboardScreen() {
   const { theme } = useTheme();
   const { profile } = useAuth();
-  const [stats, setStats] = useState<Stats>(DEMO_STATS);
+  // Real data from the database; the demo dataset is only used with no backend.
+  const [stats, setStats] = useState<Stats>(supabase ? computeStats([]) : DEMO_STATS);
   const [revKey, setRevKey] = useState<RevenueKey>('month');
   const [bookKey, setBookKey] = useState<BookingKey>('today');
 
   useEffect(() => {
     (async () => {
-      const artist = profile ? await fetchMyArtistRow(profile.id) : null;
-      const all = await fetchArtistAllBookings(artist?.id ?? null);
-      setStats(computeStats(all));
+      if (!supabase) {
+        setStats(DEMO_STATS);
+        return;
+      }
+      if (!profile) return;
+      const bookings = await fetchStatsBookings(profile);
+      setStats(computeStats(bookings));
     })();
   }, [profile]);
 

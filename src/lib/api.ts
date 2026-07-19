@@ -191,6 +191,30 @@ export async function fetchArtistAllBookings(artistId: string | null): Promise<B
   return [];
 }
 
+/**
+ * Bookings backing the dashboard: salon-wide for a manager (all their salons),
+ * or the pro's own bookings for an artist. Reads straight from the database.
+ */
+export async function fetchStatsBookings(profile: { id: string; role: string }): Promise<Booking[]> {
+  if (!supabase) return [];
+
+  if (profile.role === 'manager') {
+    const locs = await fetchMyLocations(profile.id);
+    const salonIds = locs.map((l) => l.id).filter((id) => id && !id.startsWith('local') && id !== 'l1');
+    if (salonIds.length) {
+      const { data } = await supabase.from('bookings').select('*').in('salon_id', salonIds);
+      if (data && data.length) return data as Booking[];
+    }
+  }
+
+  const artist = await fetchMyArtistRow(profile.id);
+  if (artist) {
+    const { data } = await supabase.from('bookings').select('*').eq('artist_id', artist.id);
+    return (data as Booking[]) ?? [];
+  }
+  return [];
+}
+
 export async function fetchMyServices(artistId: string | null): Promise<Service[]> {
   if (supabase && artistId) {
     const { data } = await supabase.from('services').select('*').eq('artist_id', artistId).eq('is_active', true);
