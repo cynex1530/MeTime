@@ -33,7 +33,7 @@ export default function ReviewScreen() {
       salon_id: params.salonId || null,
       artist_id: params.artistId || null,
     } as Booking;
-    await finishBooking(booking, rating, comment, profile?.id ?? '');
+    await finishBooking(booking, rating, comment, profile?.id ?? '', profile?.full_name ?? '');
     setBusy(false);
     // back to the bookings list, where the finished booking no longer appears
     if (router.canDismiss()) router.dismissAll();

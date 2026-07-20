@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { RingProgress } from '../components/RingProgress';
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
-import { fetchStatsBookings } from '../lib/api';
+import { ArtistReview, fetchArtistReviews, fetchMyArtistRow, fetchStatsBookings } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { BookingKey, computeStats, DEMO_STATS, formatMoney, RevenueKey, Stats } from '../lib/stats';
 import { useTheme } from '../theme/ThemeContext';
@@ -78,6 +78,7 @@ export function DashboardScreen() {
   const { profile } = useAuth();
   // Real data from the database; the demo dataset is only used with no backend.
   const [stats, setStats] = useState<Stats>(supabase ? computeStats([]) : DEMO_STATS);
+  const [reviews, setReviews] = useState<ArtistReview[]>([]);
   const [revKey, setRevKey] = useState<RevenueKey>('month');
   const [bookKey, setBookKey] = useState<BookingKey>('today');
 
@@ -90,8 +91,13 @@ export function DashboardScreen() {
       if (!profile) return;
       const bookings = await fetchStatsBookings(profile);
       setStats(computeStats(bookings));
+      const artist = await fetchMyArtistRow(profile.id);
+      setReviews(await fetchArtistReviews(artist?.id ?? null));
     })();
   }, [profile]);
+
+  const avgRating = reviews.length ? reviews.reduce((n, r) => n + r.rating, 0) / reviews.length : 0;
+  const recentTextReviews = reviews.filter((r) => r.comment && r.comment.trim()).slice(0, 3);
 
   const rev = revKey === 'custom' ? null : stats.revenue[revKey];
   const book = stats.bookings[bookKey];
@@ -336,6 +342,38 @@ export function DashboardScreen() {
               </View>
             </View>
           ))}
+        </Card>
+
+        {/* RATING & RECENT REVIEWS */}
+        <Card style={{ gap: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Label>RATING</Label>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 20, color: '#E8A94B' }}>★</Text>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text }}>
+                {avgRating ? avgRating.toFixed(1) : '—'}
+              </Text>
+              <Text style={{ fontSize: 14, color: theme.textSecondary }}>
+                ({reviews.length} review{reviews.length === 1 ? '' : 's'})
+              </Text>
+            </View>
+          </View>
+
+          {recentTextReviews.length > 0 ? (
+            recentTextReviews.map((r, i) => (
+              <View key={i} style={{ paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.hairline }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: theme.text }}>
+                    {r.customer_name || 'Anonymous'}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: '#E8A94B', letterSpacing: 1 }}>{'★'.repeat(r.rating)}</Text>
+                </View>
+                <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 3 }}>{r.comment}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>No written reviews yet.</Text>
+          )}
         </Card>
       </View>
     </Screen>

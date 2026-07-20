@@ -145,13 +145,15 @@ export async function finishBooking(
   booking: Booking,
   rating: number,
   comment: string,
-  customerId: string
+  customerId: string,
+  customerName: string
 ): Promise<void> {
   const isUuid = /^[0-9a-f-]{36}$/i.test(booking.id);
   if (supabase && isUuid) {
     await supabase.from('reviews').insert({
       booking_id: booking.id,
       customer_id: customerId,
+      customer_name: customerName || null,
       salon_id: booking.salon_id,
       artist_id: booking.artist_id,
       rating,
@@ -161,6 +163,21 @@ export async function finishBooking(
   } else {
     localCompleted.add(booking.id);
   }
+}
+
+export type ArtistReview = { rating: number; comment: string | null; customer_name: string | null; created_at: string };
+
+/** An artist's reviews, most recent first — for the personal dashboard. */
+export async function fetchArtistReviews(artistId: string | null): Promise<ArtistReview[]> {
+  if (supabase && artistId) {
+    const { data } = await supabase
+      .from('reviews')
+      .select('rating, comment, customer_name, created_at')
+      .eq('artist_id', artistId)
+      .order('created_at', { ascending: false });
+    if (data) return data as ArtistReview[];
+  }
+  return [];
 }
 
 export async function createBooking(booking: Omit<Booking, 'id' | 'status'>): Promise<Booking> {
