@@ -26,12 +26,14 @@ export function Screen({
   scroll = true,
   padded = true,
   clearTabBar = false,
+  topInset = true,
   style,
 }: {
   children?: React.ReactNode;
   scroll?: boolean;
   padded?: boolean;
   clearTabBar?: boolean;
+  topInset?: boolean; // false for modals, which already clear the status bar
   style?: StyleProp<ViewStyle>;
 }) {
   const { theme } = useTheme();
@@ -41,7 +43,7 @@ export function Screen({
     backgroundColor: theme.bg,
   };
   const content: ViewStyle = {
-    paddingTop: insets.top + 12,
+    paddingTop: topInset ? insets.top + 12 : 16,
     paddingHorizontal: padded ? layout.gutter : 0,
     paddingBottom: clearTabBar ? layout.tabBarClearance : insets.bottom + 24,
   };

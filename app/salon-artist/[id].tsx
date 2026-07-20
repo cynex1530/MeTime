@@ -40,7 +40,7 @@ export default function SalonArtistDetail() {
   const popMax = Math.max(...d.popular.map((x) => x.booked));
 
   return (
-    <Screen clearTabBar>
+    <Screen clearTabBar topInset={false}>
       {/* Close (modal-style) */}
       <Pressable
         onPress={() => router.back()}
@@ -125,6 +125,13 @@ export default function SalonArtistDetail() {
       {/* Appointments (6 mo) */}
       <Card style={{ marginTop: 16, gap: 12 }}>
         <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>APPOINTMENTS (6 MO)</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {d.appts6mo.map((m, i) => (
+            <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 12, color: theme.textTertiary, fontWeight: '600' }}>
+              {m.value}
+            </Text>
+          ))}
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 110, gap: 10 }}>
           {d.appts6mo.map((m, i) => (
             <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
@@ -185,18 +192,6 @@ export default function SalonArtistDetail() {
             <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 3 }}>{rv.text}</Text>
           </View>
         ))}
-      </Card>
-
-      {/* Achievements */}
-      <Card style={{ marginTop: 16, gap: 12 }}>
-        <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>ACHIEVEMENTS</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {d.achievements.map((ac) => (
-            <View key={ac} style={{ backgroundColor: theme.bg, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>{ac}</Text>
-            </View>
-          ))}
-        </View>
       </Card>
     </Screen>
   );

@@ -2,7 +2,6 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { MultiLineChart } from '../components/MultiLineChart';
 import { BackButton, Card, Screen } from '../components/ui';
 import { ArtistPerf, leaderboards, SALON_DEMO } from '../lib/salonStats';
 import { useTheme } from '../theme/ThemeContext';
@@ -317,14 +316,6 @@ export function SalonAnalyticsScreen() {
         ))}
       </View>
 
-      {/* Artist comparison */}
-      <Card style={{ marginTop: 16, gap: 6 }}>
-        <Label>ARTIST COMPARISON · REVENUE</Label>
-        <View style={{ marginTop: 8 }}>
-          <MultiLineChart series={stats.comparison} />
-        </View>
-      </Card>
-
       {/* SERVICES ANALYTICS */}
       <H2>Services analytics</H2>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
@@ -396,10 +387,13 @@ export function SalonAnalyticsScreen() {
             return (
               <View key={s.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Text style={{ width: 52, fontSize: 13, color: theme.textSecondary }}>{s.label}</Text>
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {/* bar in its own flex box, value in a fixed column so it never overflows */}
+                <View style={{ flex: 1 }}>
                   <View style={{ width: `${(s.value / max) * 100}%`, minWidth: 24, height: 26, borderRadius: 8, backgroundColor: color }} />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.textSecondary }}>{s.value}</Text>
                 </View>
+                <Text style={{ width: 34, textAlign: 'right', fontSize: 13, fontWeight: '700', color: theme.textSecondary }}>
+                  {s.value}
+                </Text>
               </View>
             );
           });
@@ -490,23 +484,6 @@ export function SalonAnalyticsScreen() {
           </Card>
         ))}
       </View>
-      <Card style={{ marginTop: 14, gap: 14 }}>
-        <Label>REASON DISTRIBUTION</Label>
-        {stats.cancellations.reasons.map((r) => (
-          <View key={r.label} style={{ gap: 6 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
-                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>{r.label}</Text>
-              </View>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: theme.text }}>{r.pct}%</Text>
-            </View>
-            <View style={{ height: 8, borderRadius: 999, backgroundColor: theme.bg, overflow: 'hidden' }}>
-              <View style={{ width: `${r.pct}%`, height: '100%', backgroundColor: r.color, borderRadius: 999 }} />
-            </View>
-          </View>
-        ))}
-      </Card>
       <Card style={{ marginTop: 14, gap: 12 }}>
         <Label>CANCELLATIONS BY ARTIST</Label>
         {stats.cancellations.byArtist.map((a) => {
