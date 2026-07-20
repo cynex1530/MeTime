@@ -97,13 +97,16 @@ export function ProProfileScreen() {
         ) : null}
       </View>
 
-      {/* Dashboard — personal stats (dark) */}
+      {/* Dashboard — personal stats. In dark theme use a lighter fill + border
+          so it separates from the near-black background. */}
       <Pressable
         onPress={() => router.push('/dashboard')}
         style={({ pressed }) => ({
           marginTop: 16,
-          backgroundColor: theme.inkSurface,
+          backgroundColor: isDark ? '#4c4e55' : theme.inkSurface,
           borderRadius: 18,
+          borderWidth: isDark ? 1 : 0,
+          borderColor: theme.cardBorder,
           paddingVertical: 18,
           paddingHorizontal: 18,
           flexDirection: 'row',
@@ -112,9 +115,9 @@ export function ProProfileScreen() {
           opacity: pressed ? 0.9 : 1,
         })}
       >
-        <Feather name="bar-chart-2" size={20} color={theme.onInk} />
-        <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: theme.onInk }}>Dashboard</Text>
-        <Feather name="chevron-right" size={20} color={theme.onInk} />
+        <Feather name="bar-chart-2" size={20} color="#ffffff" />
+        <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: '#ffffff' }}>Dashboard</Text>
+        <Feather name="chevron-right" size={20} color="#ffffff" />
       </Pressable>
 
       {/* Salon Dashboard — salon-wide analytics (purple), owners only */}
