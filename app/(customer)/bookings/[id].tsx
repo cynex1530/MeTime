@@ -80,7 +80,7 @@ export default function BookingDetail() {
         })}
       >
         <Feather name="phone" size={17} color={theme.onInk} />
-        <Text style={{ color: theme.onInk, fontSize: 16, fontWeight: '700' }}>Call {artistFirstName}</Text>
+        <Text style={{ color: theme.onInk, fontSize: 16, fontWeight: '700' }}>Call {artistFirstName} to cancel</Text>
       </Pressable>
       <Text style={{ fontSize: 13, color: theme.textFaint, textAlign: 'center', marginTop: 12, lineHeight: 18 }}>
         Need to reschedule or cancel? Give {artistFirstName} a quick call.
