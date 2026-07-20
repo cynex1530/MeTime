@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { BackButton, Card, Screen, ScreenTitle } from '../../../src/components/ui';
@@ -12,6 +12,7 @@ import { Booking } from '../../../src/types';
 export default function BookingDetail() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
 
@@ -84,6 +85,39 @@ export default function BookingDetail() {
       <Text style={{ fontSize: 13, color: theme.textFaint, textAlign: 'center', marginTop: 12, lineHeight: 18 }}>
         Need to reschedule or cancel? Give {artistFirstName} a quick call.
       </Text>
+
+      {/* Temporary: mark the appointment finished and leave a review */}
+      <Pressable
+        onPress={() =>
+          router.push({
+            pathname: '/(customer)/bookings/review',
+            params: {
+              id: booking.id,
+              artist: booking.artist_name ?? 'the artist',
+              service: booking.service_name,
+              salon: booking.salon_name ?? '',
+              salonId: booking.salon_id ?? '',
+              artistId: booking.artist_id ?? '',
+            },
+          })
+        }
+        style={({ pressed }) => ({
+          marginTop: 14,
+          backgroundColor: theme.card,
+          borderRadius: 16,
+          borderWidth: 1.5,
+          borderColor: theme.hairlineStrong,
+          paddingVertical: 16,
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 8,
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <Feather name="check-circle" size={17} color={theme.text} />
+        <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>Finish</Text>
+      </Pressable>
     </Screen>
   );
 }

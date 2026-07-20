@@ -115,13 +115,16 @@ export async function fetchArtistServices(artistId: string, categoryId?: string 
 // Bookings
 // ---------------------------------------------------------------------------
 
+// Bookings finished locally in demo mode (so they disappear from the list too)
+const localCompleted = new Set<string>();
+
 export async function fetchMyBookings(customerId: string): Promise<Booking[]> {
   if (supabase) {
     const { data } = await supabase
       .from('bookings')
       .select('*, salons(name, area), artists(display_name, phone)')
       .eq('customer_id', customerId)
-      .neq('status', 'cancelled')
+      .eq('status', 'confirmed')
       .order('starts_at');
     if (data?.length) {
       return data.map((b: any) => ({
@@ -134,7 +137,30 @@ export async function fetchMyBookings(customerId: string): Promise<Booking[]> {
     }
     if (data) return [];
   }
-  return SAMPLE_BOOKINGS;
+  return SAMPLE_BOOKINGS.filter((b) => !localCompleted.has(b.id));
+}
+
+/** Save a review and mark the booking done (it then leaves the customer list). */
+export async function finishBooking(
+  booking: Booking,
+  rating: number,
+  comment: string,
+  customerId: string
+): Promise<void> {
+  const isUuid = /^[0-9a-f-]{36}$/i.test(booking.id);
+  if (supabase && isUuid) {
+    await supabase.from('reviews').insert({
+      booking_id: booking.id,
+      customer_id: customerId,
+      salon_id: booking.salon_id,
+      artist_id: booking.artist_id,
+      rating,
+      comment: comment.trim() || null,
+    });
+    await supabase.from('bookings').update({ status: 'completed' }).eq('id', booking.id);
+  } else {
+    localCompleted.add(booking.id);
+  }
 }
 
 export async function createBooking(booking: Omit<Booking, 'id' | 'status'>): Promise<Booking> {
