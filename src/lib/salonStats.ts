@@ -48,6 +48,24 @@ export type SalonStats = {
   };
   artists: ArtistPerf[];
   comparison: { id: string; name: string; color: string; points: number[] }[];
+  services: {
+    mostPopular: { name: string; booked: number };
+    topRevenue: { name: string; amount: string };
+    avgPrice: string;
+    avgDuration: string;
+    list: { name: string; revenue: number; appts: number; minutes: number; rating: number }[];
+  };
+  occupancy: { name: string; initials: string; color: string; cells: number[] }[];
+  demand: { slots: { label: string; value: number; level: 'low' | 'mid' | 'peak' }[]; suggested: string[] };
+  customers: { label: string; value: string; delta: number; good: boolean; dot: string }[];
+  reviews: { avg: string; fiveStar: string; negative: string; trend: string; evolution: { label: string; value: number }[] };
+  cancellations: {
+    cancelRate: { value: string; delta: number };
+    noShowRate: { value: string; delta: number };
+    reasons: { label: string; pct: number; color: string }[];
+    byArtist: { name: string; pct: number; level: 'low' | 'mid' | 'high' }[];
+  };
+  financial: { label: string; value: string; delta: number }[];
 };
 
 export const SALON_DEMO: SalonStats = {
@@ -89,6 +107,93 @@ export const SALON_DEMO: SalonStats = {
     { id: 'ar', name: 'Alex', color: ARTIST_COLORS[1], points: [7.2, 8.1, 9.4, 11, 12.8] },
     { id: 'ip', name: 'Ioana', color: ARTIST_COLORS[2], points: [8.4, 8.6, 9, 9.3, 9.6] },
     { id: 'lv', name: 'Lena', color: ARTIST_COLORS[3], points: [9, 11, 12.8, 14.5, 16.4] },
+  ],
+  services: {
+    mostPopular: { name: 'Haircut', booked: 312 },
+    topRevenue: { name: 'Haircut', amount: '$18.7k' },
+    avgPrice: '$75',
+    avgDuration: '52 min',
+    list: [
+      { name: 'Haircut', revenue: 18700, appts: 312, minutes: 42, rating: 4.9 },
+      { name: 'Balayage', revenue: 15300, appts: 118, minutes: 130, rating: 4.8 },
+      { name: 'Beard Trim', revenue: 8000, appts: 268, minutes: 25, rating: 4.7 },
+      { name: 'Manicure', revenue: 9200, appts: 204, minutes: 40, rating: 4.8 },
+      { name: 'Tattoo Session', revenue: 16300, appts: 74, minutes: 145, rating: 5.0 },
+      { name: 'Makeup', revenue: 6700, appts: 96, minutes: 55, rating: 4.6 },
+    ],
+  },
+  occupancy: [
+    { name: 'Maria', initials: 'MC', color: ARTIST_COLORS[0], cells: [0.7, 0.7, 0.75, 0.8, 0.8, 0.85, 0.3] },
+    { name: 'Alex', initials: 'AR', color: ARTIST_COLORS[1], cells: [0.85, 0.8, 0.85, 0.9, 0.9, 0.85, 0.4] },
+    { name: 'Ioana', initials: 'IP', color: ARTIST_COLORS[2], cells: [0.5, 0.55, 0.6, 0.6, 0.65, 0.6, 0.25] },
+    { name: 'Lena', initials: 'LV', color: ARTIST_COLORS[3], cells: [0.6, 0.65, 0.7, 0.7, 0.75, 0.7, 0.35] },
+    { name: 'Sofia', initials: 'SM', color: '#8B5CF6', cells: [0.4, 0.4, 0.45, 0.5, 0.5, 0.45, 0.2] },
+    { name: 'Danny', initials: 'DK', color: '#34A853', cells: [0.7, 0.7, 0.7, 0.75, 0.75, 0.8, 0.35] },
+  ],
+  demand: {
+    slots: [
+      { label: '9 AM', value: 42, level: 'low' },
+      { label: '10 AM', value: 68, level: 'mid' },
+      { label: '11 AM', value: 74, level: 'mid' },
+      { label: '12 PM', value: 51, level: 'mid' },
+      { label: '1 PM', value: 38, level: 'low' },
+      { label: '2 PM', value: 44, level: 'mid' },
+      { label: '3 PM', value: 62, level: 'mid' },
+      { label: '4 PM', value: 88, level: 'peak' },
+      { label: '5 PM', value: 96, level: 'peak' },
+      { label: '6 PM', value: 71, level: 'mid' },
+      { label: '7 PM', value: 34, level: 'low' },
+    ],
+    suggested: ['Fri 2–5 PM', 'Tue 1–2 PM', 'Thu 7–8 PM', 'Mon 9–10 AM'],
+  },
+  customers: [
+    { label: 'New customers', value: '124', delta: 11, good: true, dot: '#6C5CE7' },
+    { label: 'Returning', value: '406', delta: 6, good: true, dot: '#2FBFA6' },
+    { label: 'VIP', value: '48', delta: 15, good: true, dot: '#E8A94B' },
+    { label: 'Lost', value: '37', delta: -9, good: false, dot: '#e5484d' },
+    { label: 'Retention', value: '76%', delta: 4, good: true, dot: '#2FBFA6' },
+    { label: 'Avg visits', value: '3.4', delta: 8, good: true, dot: '#6C5CE7' },
+  ],
+  reviews: {
+    avg: '4.8',
+    fiveStar: '1,240',
+    negative: '34',
+    trend: '+0.2',
+    evolution: [
+      { label: 'F', value: 4.5 },
+      { label: 'M', value: 4.6 },
+      { label: 'A', value: 4.6 },
+      { label: 'M', value: 4.7 },
+      { label: 'J', value: 4.8 },
+      { label: 'J', value: 4.8 },
+    ],
+  },
+  cancellations: {
+    cancelRate: { value: '5.2%', delta: -7 },
+    noShowRate: { value: '4.6%', delta: -12 },
+    reasons: [
+      { label: 'Schedule conflict', pct: 34, color: '#6C5CE7' },
+      { label: 'Feeling unwell', pct: 26, color: '#2FBFA6' },
+      { label: 'Found cheaper', pct: 18, color: '#E8A94B' },
+      { label: 'Personal', pct: 14, color: '#E85B9B' },
+      { label: 'Other', pct: 8, color: '#9aa0a6' },
+    ],
+    byArtist: [
+      { name: 'Maria', pct: 4, level: 'low' },
+      { name: 'Alex', pct: 3, level: 'low' },
+      { name: 'Ioana', pct: 7, level: 'mid' },
+      { name: 'Lena', pct: 2, level: 'low' },
+      { name: 'Sofia', pct: 11, level: 'high' },
+      { name: 'Danny', pct: 5, level: 'mid' },
+    ],
+  },
+  financial: [
+    { label: 'Revenue', value: '$71.4k', delta: 14 },
+    { label: 'Commission paid', value: '$21.4k', delta: 12 },
+    { label: 'Avg ticket', value: '$75', delta: 5 },
+    { label: 'Rev / appointment', value: '$75', delta: 3 },
+    { label: 'Rev / artist', value: '$11.9k', delta: 9 },
+    { label: 'Revenue growth', value: '+14%', delta: 14 },
   ],
 };
 

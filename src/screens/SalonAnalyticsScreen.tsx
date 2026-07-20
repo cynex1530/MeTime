@@ -10,6 +10,27 @@ import { useTheme } from '../theme/ThemeContext';
 const GREEN = '#1f8a4c';
 const RED = '#e5484d';
 const PURPLE = '#6C5CE7';
+const GREEN_BAR = '#42B883';
+const AMBER = '#E8A94B';
+
+function H2({ children }: { children: React.ReactNode }) {
+  const { theme } = useTheme();
+  return (
+    <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: -0.5, color: theme.text, marginTop: 26, marginBottom: 12 }}>
+      {children}
+    </Text>
+  );
+}
+
+function DeltaInline({ delta, good }: { delta: number; good: boolean }) {
+  const color = good ? GREEN : RED;
+  return (
+    <Text style={{ color, fontSize: 13, fontWeight: '700' }}>
+      {good ? '▲' : '▼'} {delta > 0 ? '+' : ''}
+      {delta}%
+    </Text>
+  );
+}
 
 function Delta({ delta, good }: { delta: number; good: boolean }) {
   const color = good ? GREEN : RED;
@@ -303,6 +324,221 @@ export function SalonAnalyticsScreen() {
           <MultiLineChart series={stats.comparison} />
         </View>
       </Card>
+
+      {/* SERVICES ANALYTICS */}
+      <H2>Services analytics</H2>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
+        {[
+          { l: 'MOST POPULAR', v: stats.services.mostPopular.name, s: `${stats.services.mostPopular.booked} booked` },
+          { l: 'TOP REVENUE', v: stats.services.topRevenue.name, s: stats.services.topRevenue.amount },
+          { l: 'AVG PRICE', v: stats.services.avgPrice, s: 'per service' },
+          { l: 'AVG DURATION', v: stats.services.avgDuration, s: 'per appt' },
+        ].map((t) => (
+          <Card key={t.l} style={{ width: '47%' }}>
+            <Label>{t.l}</Label>
+            <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text, marginTop: 6 }}>{t.v}</Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>{t.s}</Text>
+          </Card>
+        ))}
+      </View>
+      <Card style={{ marginTop: 14, gap: 18 }}>
+        {stats.services.list.map((s) => {
+          const max = Math.max(...stats.services.list.map((x) => x.revenue));
+          return (
+            <View key={s.name} style={{ gap: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>{s.name}</Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>${(s.revenue / 1000).toFixed(1)}k</Text>
+              </View>
+              <View style={{ height: 8, borderRadius: 999, backgroundColor: theme.bg, overflow: 'hidden' }}>
+                <View style={{ width: `${(s.revenue / max) * 100}%`, height: '100%', backgroundColor: PURPLE, borderRadius: 999 }} />
+              </View>
+              <Text style={{ fontSize: 13, color: theme.textSecondary }}>
+                {s.appts} appts · {s.minutes} min · ★ {s.rating}
+              </Text>
+            </View>
+          );
+        })}
+      </Card>
+
+      {/* OCCUPANCY BY DAY */}
+      <Card style={{ marginTop: 16, gap: 12 }}>
+        <Label>OCCUPANCY BY DAY</Label>
+        <View style={{ flexDirection: 'row', paddingLeft: 92 }}>
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+            <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '700', color: theme.textTertiary }}>
+              {d}
+            </Text>
+          ))}
+        </View>
+        {stats.occupancy.map((row) => (
+          <View key={row.name} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 92, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Avatar initials={row.initials} color={row.color} size={28} />
+              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>{row.name}</Text>
+            </View>
+            {row.cells.map((c, i) => (
+              <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+                <View style={{ width: '86%', aspectRatio: 1, maxWidth: 34, borderRadius: 8, backgroundColor: `rgba(108,92,231,${Math.max(0.15, c)})` }} />
+              </View>
+            ))}
+          </View>
+        ))}
+      </Card>
+
+      {/* TIME-SLOT DEMAND */}
+      <Card style={{ marginTop: 16, gap: 12 }}>
+        <Label>TIME-SLOT DEMAND</Label>
+        {(() => {
+          const max = Math.max(...stats.demand.slots.map((s) => s.value));
+          return stats.demand.slots.map((s) => {
+            const color = s.level === 'peak' ? GREEN_BAR : s.level === 'low' ? theme.hairlineStrong : PURPLE;
+            return (
+              <View key={s.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={{ width: 52, fontSize: 13, color: theme.textSecondary }}>{s.label}</Text>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: `${(s.value / max) * 100}%`, minWidth: 24, height: 26, borderRadius: 8, backgroundColor: color }} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.textSecondary }}>{s.value}</Text>
+                </View>
+              </View>
+            );
+          });
+        })()}
+        <View style={{ height: 1, backgroundColor: theme.hairline, marginTop: 4 }} />
+        <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>Suggested free slots</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {stats.demand.suggested.map((s) => (
+            <View key={s} style={{ backgroundColor: theme.bg, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>{s}</Text>
+            </View>
+          ))}
+        </View>
+      </Card>
+
+      {/* CUSTOMER ANALYTICS */}
+      <H2>Customer analytics</H2>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
+        {stats.customers.map((c) => (
+          <Card key={c.label} style={{ width: '47%' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.dot }} />
+              <Text style={{ fontSize: 14, color: theme.textSecondary }}>{c.label}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 6 }}>
+              <Text style={{ fontSize: 26, fontWeight: '800', color: theme.text }}>{c.value}</Text>
+              <View style={{ marginBottom: 4 }}>
+                <DeltaInline delta={c.delta} good={c.good} />
+              </View>
+            </View>
+          </Card>
+        ))}
+      </View>
+
+      {/* REVIEWS */}
+      <H2>Reviews</H2>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
+        {[
+          { l: 'Average rating', v: `★ ${stats.reviews.avg}`, green: false },
+          { l: '5-star reviews', v: stats.reviews.fiveStar, green: false },
+          { l: 'Negative reviews', v: stats.reviews.negative, green: false },
+          { l: 'Review trend', v: stats.reviews.trend, green: true },
+        ].map((t) => (
+          <Card key={t.l} style={{ width: '47%' }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t.l}</Text>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: t.green ? GREEN : theme.text, marginTop: 6 }}>{t.v}</Text>
+          </Card>
+        ))}
+      </View>
+      <Card style={{ marginTop: 14, gap: 12 }}>
+        <Label>RATING EVOLUTION</Label>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {stats.reviews.evolution.map((e, i) => (
+            <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 12, color: theme.textTertiary, fontWeight: '600' }}>
+              {e.value}
+            </Text>
+          ))}
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 90, gap: 10 }}>
+          {stats.reviews.evolution.map((e, i) => (
+            <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
+              <View style={{ width: '100%', height: Math.max(10, ((e.value - 4.3) / 0.6) * 70), backgroundColor: AMBER, borderRadius: 8 }} />
+            </View>
+          ))}
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {stats.reviews.evolution.map((e, i) => (
+            <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 13, color: theme.textSecondary, fontWeight: '600' }}>
+              {e.label}
+            </Text>
+          ))}
+        </View>
+      </Card>
+
+      {/* CANCELLATIONS & NO-SHOWS */}
+      <H2>Cancellations & no-shows</H2>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
+        {[
+          { l: 'Cancellation rate', v: stats.cancellations.cancelRate.value, d: stats.cancellations.cancelRate.delta },
+          { l: 'No-show rate', v: stats.cancellations.noShowRate.value, d: stats.cancellations.noShowRate.delta },
+        ].map((t) => (
+          <Card key={t.l} style={{ width: '47%' }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t.l}</Text>
+            <Text style={{ fontSize: 26, fontWeight: '800', color: theme.text, marginTop: 6 }}>{t.v}</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: GREEN, marginTop: 6 }}>
+              ▼ {t.d}% vs last month
+            </Text>
+          </Card>
+        ))}
+      </View>
+      <Card style={{ marginTop: 14, gap: 14 }}>
+        <Label>REASON DISTRIBUTION</Label>
+        {stats.cancellations.reasons.map((r) => (
+          <View key={r.label} style={{ gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
+                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>{r.label}</Text>
+              </View>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: theme.text }}>{r.pct}%</Text>
+            </View>
+            <View style={{ height: 8, borderRadius: 999, backgroundColor: theme.bg, overflow: 'hidden' }}>
+              <View style={{ width: `${r.pct}%`, height: '100%', backgroundColor: r.color, borderRadius: 999 }} />
+            </View>
+          </View>
+        ))}
+      </Card>
+      <Card style={{ marginTop: 14, gap: 12 }}>
+        <Label>CANCELLATIONS BY ARTIST</Label>
+        {stats.cancellations.byArtist.map((a) => {
+          const color = a.level === 'high' ? RED : a.level === 'mid' ? AMBER : GREEN_BAR;
+          const max = Math.max(...stats.cancellations.byArtist.map((x) => x.pct));
+          return (
+            <View key={a.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Text style={{ width: 56, fontSize: 14, fontWeight: '700', color: theme.text }}>{a.name}</Text>
+              <View style={{ flex: 1, height: 8, borderRadius: 999, backgroundColor: theme.bg, overflow: 'hidden' }}>
+                <View style={{ width: `${(a.pct / max) * 100}%`, height: '100%', backgroundColor: color, borderRadius: 999 }} />
+              </View>
+              <Text style={{ width: 36, textAlign: 'right', fontSize: 14, fontWeight: '700', color: theme.textSecondary }}>{a.pct}%</Text>
+            </View>
+          );
+        })}
+      </Card>
+
+      {/* FINANCIAL */}
+      <H2>Financial</H2>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
+        {stats.financial.map((t) => (
+          <Card key={t.label} style={{ width: '47%' }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 6 }}>
+              <Text style={{ fontSize: 24, fontWeight: '800', color: theme.text }}>{t.value}</Text>
+              <View style={{ marginBottom: 4 }}>
+                <DeltaInline delta={t.delta} good />
+              </View>
+            </View>
+          </Card>
+        ))}
+      </View>
     </Screen>
   );
 }
