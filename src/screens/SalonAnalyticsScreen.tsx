@@ -5,7 +5,7 @@ import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-nativ
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
 import { fetchMyLocations } from '../lib/api';
-import { ACCENT, ArtistPerf, leaderboards, SALON_DEMO } from '../lib/salonStats';
+import { ACCENT, ArtistPerf, leaderboards, SALON_DEMO, scopeStatsToService } from '../lib/salonStats';
 import { Salon } from '../types';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -174,7 +174,6 @@ export function SalonAnalyticsScreen() {
   const { theme } = useTheme();
   const { profile } = useAuth();
   const router = useRouter();
-  const stats = SALON_DEMO;
 
   const [metric, setMetric] = useState<'revenue' | 'appts'>('revenue');
   const [query, setQuery] = useState('');
@@ -195,6 +194,12 @@ export function SalonAnalyticsScreen() {
       });
   }, [profile]);
 
+  // Selecting a service scopes the ENTIRE dashboard to that service.
+  const stats = useMemo(
+    () => (serviceFilter === 'All' ? SALON_DEMO : scopeStatsToService(SALON_DEMO, serviceFilter)),
+    [serviceFilter]
+  );
+
   const selectedSalonName = salons.find((s) => s.id === salonId)?.name ?? stats.salonName;
 
   const bars = stats.overview[metric];
@@ -203,10 +208,10 @@ export function SalonAnalyticsScreen() {
   const filteredArtists = stats.artists.filter(
     (a) => a.name.toLowerCase().includes(query.toLowerCase()) || a.profession.toLowerCase().includes(query.toLowerCase())
   );
-  const filteredServices =
-    serviceFilter === 'All' ? stats.services.list : stats.services.list.filter((s) => s.name === serviceFilter);
+  const filteredServices = stats.services.list;
 
-  const serviceOptions = ['All', ...stats.services.list.map((s) => s.name)];
+  // Service options come from the full dataset, not the scoped view.
+  const serviceOptions = ['All', ...SALON_DEMO.services.list.map((s) => s.name)];
 
   return (
     <Screen clearTabBar>

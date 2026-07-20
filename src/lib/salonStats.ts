@@ -260,6 +260,86 @@ export function buildArtistDetail(a: ArtistPerf): ArtistDetail {
   };
 }
 
+/** Parse a display value like "$71.4k", "530", "68%", "3.4" into a number. */
+function num(s: string): number {
+  const clean = s.replace(/[$,%\s]/g, '');
+  return s.includes('k') ? parseFloat(clean) * 1000 : parseFloat(clean);
+}
+const fmtK = (v: number) => `$${(v / 1000).toFixed(1)}k`;
+const roundK = (v: number) => `$${Math.round(v / 1000)}k`;
+
+/**
+ * Scope the whole salon dashboard to a single service. Count/money metrics are
+ * scaled by that service's share of appointments/revenue; percentages and
+ * ratings are taken from (or left proportional to) the service.
+ */
+export function scopeStatsToService(base: SalonStats, serviceName: string): SalonStats {
+  const svc = base.services.list.find((s) => s.name === serviceName);
+  if (!svc) return base;
+
+  const totalRev = base.services.list.reduce((n, s) => n + s.revenue, 0) || 1;
+  const totalAppts = base.services.list.reduce((n, s) => n + s.appts, 0) || 1;
+  const revShare = svc.revenue / totalRev;
+  const apptShare = svc.appts / totalAppts;
+  const avgTicket = svc.appts ? Math.round(svc.revenue / svc.appts) : 0;
+  const numArtists = base.artists.length || 1;
+
+  const kpis = base.kpis.map((k) => {
+    if (k.key === 'revenue') return { ...k, value: fmtK(svc.revenue) };
+    if (k.key === 'appts') return { ...k, value: `${svc.appts}` };
+    if (k.key === 'customers') return { ...k, value: `${Math.round(num(k.value) * apptShare)}` };
+    if (k.key === 'rating') return { ...k, value: svc.rating.toFixed(1) };
+    return k; // returning, occupancy, cancellation stay as-is
+  });
+
+  const artists = base.artists.map((a) => ({
+    ...a,
+    revenue: Math.round(a.revenue * revShare),
+    appts: Math.round(a.appts * apptShare),
+  }));
+
+  const scaleCustomer = (v: string) => (v.includes('%') || v.includes('.') ? v : `${Math.round(num(v) * apptShare)}`);
+
+  return {
+    ...base,
+    kpis,
+    overview: {
+      revenue: base.overview.revenue.map((b) => ({ ...b, value: Math.round(b.value * revShare * 10) / 10 })),
+      appts: base.overview.appts.map((b) => ({ ...b, value: Math.round(b.value * apptShare) })),
+      revenueTotal: roundK(svc.revenue),
+      apptsTotal: `${svc.appts}`,
+    },
+    artists,
+    comparison: base.comparison.map((c) => ({ ...c, points: c.points.map((p) => Math.round(p * revShare * 10) / 10) })),
+    services: {
+      mostPopular: { name: svc.name, booked: svc.appts },
+      topRevenue: { name: svc.name, amount: fmtK(svc.revenue) },
+      avgPrice: `$${avgTicket}`,
+      avgDuration: `${svc.minutes} min`,
+      list: [svc],
+    },
+    demand: {
+      ...base.demand,
+      slots: base.demand.slots.map((s) => ({ ...s, value: Math.round(s.value * apptShare) })),
+    },
+    customers: base.customers.map((c) => ({ ...c, value: scaleCustomer(c.value) })),
+    reviews: {
+      ...base.reviews,
+      avg: svc.rating.toFixed(1),
+      fiveStar: Math.round(num(base.reviews.fiveStar) * apptShare).toLocaleString(),
+      negative: `${Math.round(num(base.reviews.negative) * apptShare)}`,
+    },
+    financial: [
+      { label: 'Revenue', value: fmtK(svc.revenue), delta: 14 },
+      { label: 'Commission paid', value: fmtK(num(base.financial[1].value) * revShare), delta: 12 },
+      { label: 'Avg ticket', value: `$${avgTicket}`, delta: 5 },
+      { label: 'Rev / appointment', value: `$${avgTicket}`, delta: 3 },
+      { label: 'Rev / artist', value: fmtK(svc.revenue / numArtists), delta: 9 },
+      { label: 'Revenue growth', value: '+14%', delta: 14 },
+    ],
+  };
+}
+
 export type Leader = { title: string; artist: ArtistPerf; value: string };
 
 export function leaderboards(artists: ArtistPerf[]): Leader[] {
