@@ -197,6 +197,67 @@ export const SALON_DEMO: SalonStats = {
   ],
 };
 
+export type ArtistDetail = {
+  artist: ArtistPerf;
+  customers: number;
+  score: number;
+  revenue6mo: { label: string; value: number }[];
+  appts6mo: { label: string; value: number }[];
+  popular: { name: string; booked: number }[];
+  heatmap: number[][];
+  reviews: { name: string; stars: number; text: string }[];
+  achievements: string[];
+};
+
+const MONTHS6 = ['F', 'M', 'A', 'M', 'J', 'J'];
+const RAMP = [0.51, 0.56, 0.62, 0.67, 0.77, 1.0];
+
+const POPULAR: Record<string, { name: string; booked: number }[]> = {
+  mc: [{ name: 'Cut & Style', booked: 96 }, { name: 'Balayage', booked: 60 }, { name: 'Blowout', booked: 40 }],
+  ar: [{ name: 'Skin Fade', booked: 120 }, { name: 'Classic Cut', booked: 80 }, { name: 'Beard Trim', booked: 54 }],
+  ip: [{ name: 'Gel Manicure', booked: 90 }, { name: 'Nail Art', booked: 52 }, { name: 'Pedicure', booked: 34 }],
+  lv: [{ name: 'Fine-line', booked: 34 }, { name: 'Custom Piece', booked: 22 }, { name: 'Touch-up', booked: 18 }],
+};
+
+const REVIEWS: Record<string, { name: string; stars: number; text: string }[]> = {
+  lv: [
+    { name: 'James P.', stars: 5, text: 'Best in the city, always on time.' },
+    { name: 'Nadia R.', stars: 5, text: 'Absolutely loved the result.' },
+  ],
+  default: [
+    { name: 'Chris M.', stars: 5, text: 'Great work, super friendly.' },
+    { name: 'Sara L.', stars: 5, text: "Couldn't be happier, highly recommend." },
+  ],
+};
+
+function seededRandom(seed: number) {
+  let s = seed % 233280 || 1;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+export function buildArtistDetail(a: ArtistPerf): ArtistDetail {
+  const rnd = seededRandom(a.id.split('').reduce((n, c) => n + c.charCodeAt(0), 7));
+  const heatmap = Array.from({ length: 5 }, () => Array.from({ length: 7 }, () => 0.12 + rnd() * 0.85));
+  return {
+    artist: a,
+    customers: Math.round(a.appts * 0.7),
+    score: Math.round(0.4 * ((a.rating / 5) * 100) + 0.3 * a.occupancy + 0.3 * a.returnPct),
+    revenue6mo: RAMP.map((r, i) => ({ label: MONTHS6[i], value: Math.round((a.revenue / 1000) * r * 10) / 10 })),
+    appts6mo: RAMP.map((r, i) => ({ label: MONTHS6[i], value: Math.round(a.appts * r) })),
+    popular: POPULAR[a.id] ?? [
+      { name: 'Signature service', booked: Math.round(a.appts * 0.4) },
+      { name: 'Popular add-on', booked: Math.round(a.appts * 0.28) },
+      { name: 'Quick service', booked: Math.round(a.appts * 0.2) },
+    ],
+    heatmap,
+    reviews: REVIEWS[a.id] ?? REVIEWS.default,
+    achievements: ['🔥 6-month streak', '⭐ Top rated', '📈 Rising star', '💎 VIP magnet'],
+  };
+}
+
 export type Leader = { title: string; artist: ArtistPerf; value: string };
 
 export function leaderboards(artists: ArtistPerf[]): Leader[] {

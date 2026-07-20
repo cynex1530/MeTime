@@ -16,7 +16,9 @@ function AppShell() {
           headerShown: false,
           contentStyle: { backgroundColor: theme.bg },
         }}
-      />
+      >
+        <Stack.Screen name="salon-artist/[id]" options={{ presentation: 'modal' }} />
+      </Stack>
     </>
   );
 }
