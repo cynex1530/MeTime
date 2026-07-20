@@ -1,8 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { Sheet } from '../components/Sheet';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
 import { fetchMyLocations } from '../lib/api';
@@ -53,6 +52,7 @@ function Label({ children }: { children: React.ReactNode }) {
   return <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>{children}</Text>;
 }
 
+/** A dropdown menu that opens anchored directly under its button. */
 function FilterDropdown({
   label,
   value,
@@ -65,11 +65,21 @@ function FilterDropdown({
   onSelect: (v: string) => void;
 }) {
   const { theme } = useTheme();
+  const ref = useRef<View>(null);
   const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState({ x: 0, y: 0, w: 0 });
+
+  function openMenu() {
+    ref.current?.measureInWindow((x, y, w, h) => {
+      setAnchor({ x, y: y + h + 6, w });
+      setOpen(true);
+    });
+  }
+
   return (
-    <>
+    <View ref={ref} collapsable={false}>
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={openMenu}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -84,32 +94,58 @@ function FilterDropdown({
       >
         <Text style={{ fontSize: 13, color: theme.textSecondary }}>{label}</Text>
         <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>{value}</Text>
-        <Feather name="chevron-down" size={14} color={theme.iconMuted} />
+        <Feather name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.iconMuted} />
       </Pressable>
-      <Sheet visible={open} onClose={() => setOpen(false)}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 10 }}>{label}</Text>
-        {options.map((o, i) => (
-          <Pressable
-            key={o}
-            onPress={() => {
-              onSelect(o);
-              setOpen(false);
-            }}
+
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={{ flex: 1 }} onPress={() => setOpen(false)}>
+          <View
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingVertical: 14,
-              borderTopWidth: i === 0 ? 0 : 1,
-              borderTopColor: theme.hairline,
+              position: 'absolute',
+              top: anchor.y,
+              left: anchor.x,
+              minWidth: Math.max(anchor.w, 190),
+              maxHeight: 300,
+              backgroundColor: theme.popoverBg,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: theme.hairline,
+              paddingVertical: 4,
+              shadowColor: theme.shadow,
+              shadowOpacity: 0.18,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 10,
             }}
           >
-            <Text style={{ fontSize: 16, color: theme.text }}>{o}</Text>
-            {value === o ? <Feather name="check" size={18} color={theme.iconStroke} /> : null}
-          </Pressable>
-        ))}
-      </Sheet>
-    </>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {options.map((o, i) => (
+                <Pressable
+                  key={o}
+                  onPress={() => {
+                    onSelect(o);
+                    setOpen(false);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    borderTopWidth: i === 0 ? 0 : 1,
+                    borderTopColor: theme.hairline,
+                  }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: value === o ? '700' : '500', color: theme.text }}>{o}</Text>
+                  {value === o ? <Feather name="check" size={16} color={theme.iconStroke} /> : null}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }
 
@@ -149,7 +185,6 @@ export function SalonAnalyticsScreen() {
 
   // Working filters
   const [dateRange, setDateRange] = useState('Last 30 days');
-  const [artistFilter, setArtistFilter] = useState('All');
   const [serviceFilter, setServiceFilter] = useState('All');
 
   useEffect(() => {
@@ -165,16 +200,12 @@ export function SalonAnalyticsScreen() {
   const bars = stats.overview[metric];
   const barMax = useMemo(() => Math.max(...bars.map((b) => b.value)), [bars]);
   const leaders = useMemo(() => leaderboards(stats.artists), [stats.artists]);
-  const filteredArtists = stats.artists.filter((a) => {
-    const matchesQuery =
-      a.name.toLowerCase().includes(query.toLowerCase()) || a.profession.toLowerCase().includes(query.toLowerCase());
-    const matchesFilter = artistFilter === 'All' || a.name === artistFilter;
-    return matchesQuery && matchesFilter;
-  });
+  const filteredArtists = stats.artists.filter(
+    (a) => a.name.toLowerCase().includes(query.toLowerCase()) || a.profession.toLowerCase().includes(query.toLowerCase())
+  );
   const filteredServices =
     serviceFilter === 'All' ? stats.services.list : stats.services.list.filter((s) => s.name === serviceFilter);
 
-  const artistOptions = ['All', ...stats.artists.map((a) => a.name)];
   const serviceOptions = ['All', ...stats.services.list.map((s) => s.name)];
 
   return (
@@ -208,7 +239,6 @@ export function SalonAnalyticsScreen() {
           options={['Today', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'This year']}
           onSelect={setDateRange}
         />
-        <FilterDropdown label="Artist" value={artistFilter} options={artistOptions} onSelect={setArtistFilter} />
         <FilterDropdown label="Service" value={serviceFilter} options={serviceOptions} onSelect={setServiceFilter} />
       </ScrollView>
 
