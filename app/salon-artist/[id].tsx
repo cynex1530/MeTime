@@ -1,10 +1,12 @@
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { RingProgress } from '../../src/components/RingProgress';
 import { Card, Screen } from '../../src/components/ui';
-import { ACCENT, buildArtistDetail, SALON_DEMO } from '../../src/lib/salonStats';
+import { fetchArtistAllBookings, fetchArtistById, fetchArtistReviews } from '../../src/lib/api';
+import { ACCENT, ArtistDetail, buildArtistDetail, computeArtistDetail, SALON_DEMO } from '../../src/lib/salonStats';
+import { supabase } from '../../src/lib/supabase';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 const GREEN = '#42B883';
@@ -21,8 +23,27 @@ export default function SalonArtistDetail() {
   const { theme } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const a = SALON_DEMO.artists.find((x) => x.id === id) ?? SALON_DEMO.artists[0];
-  const d = useMemo(() => buildArtistDetail(a), [a]);
+  const [d, setD] = useState<ArtistDetail | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      if (!id) return;
+      if (supabase) {
+        const artist = await fetchArtistById(id);
+        if (artist) {
+          const [bookings, reviews] = await Promise.all([fetchArtistAllBookings(id), fetchArtistReviews(id)]);
+          setD(computeArtistDetail({ artist, bookings, reviews }));
+          return;
+        }
+      }
+      // demo fallback (no backend / unknown id)
+      const demoA = SALON_DEMO.artists.find((x) => x.id === id) ?? SALON_DEMO.artists[0];
+      setD(buildArtistDetail(demoA));
+    })();
+  }, [id]);
+
+  if (!d) return <Screen scroll={false} topInset={false} />;
+  const a = d.artist;
 
   const tiles = [
     { v: `$${(a.revenue / 1000).toFixed(1)}k`, l: 'Revenue' },

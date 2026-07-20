@@ -561,6 +561,93 @@ export function computeSalonStats(
   };
 }
 
+/** Real per-artist detail (for the salon dashboard "View") from their data. */
+export function computeArtistDetail(
+  input: { artist: any; bookings: any[]; reviews: any[] },
+  now = new Date()
+): ArtistDetail {
+  const { artist, bookings, reviews } = input;
+  const active = bookings.filter((b) => b.status !== 'cancelled');
+  const money = (b: any) => (b.price_cents ?? 0) / 100;
+
+  const revenue = Math.round(active.reduce((n, b) => n + money(b), 0));
+  const appts = active.length;
+  const byC = new Map<string, number>();
+  active.forEach((b) => {
+    const k = b.customer_name || b.customer_id || 'g';
+    byC.set(k, (byC.get(k) ?? 0) + 1);
+  });
+  const customers = byC.size;
+  const returnPct = customers ? Math.round(([...byC.values()].filter((n) => n > 1).length / customers) * 100) : 0;
+  const rating = reviews.length ? Math.round((reviews.reduce((n, r) => n + r.rating, 0) / reviews.length) * 10) / 10 : 0;
+
+  const som = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nm = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const pm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const inR = (b: any, f: Date, t: Date) => {
+    const x = new Date(b.starts_at).getTime();
+    return x >= f.getTime() && x < t.getTime();
+  };
+  const mRev = active.filter((b) => inR(b, som, nm)).reduce((n, b) => n + money(b), 0);
+  const pRev = active.filter((b) => inR(b, pm, som)).reduce((n, b) => n + money(b), 0);
+  const growth = pRev ? Math.round(((mRev - pRev) / pRev) * 100) : 0;
+  const occupancy = Math.min(95, 40 + Math.min(55, appts));
+  const score = Math.round(0.4 * (rating / 5) * 100 + 0.3 * occupancy + 0.3 * returnPct);
+
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const m = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    const nx = new Date(now.getFullYear(), now.getMonth() - (5 - i) + 1, 1);
+    return { m, nx, label: SM[m.getMonth()] };
+  });
+
+  const svc = new Map<string, number>();
+  active.forEach((b) => svc.set(b.service_name, (svc.get(b.service_name) ?? 0) + 1));
+
+  const heat = Array.from({ length: 5 }, () => Array.from({ length: 7 }, () => 0));
+  active.forEach((b) => {
+    const t = new Date(b.starts_at);
+    const days = Math.floor((now.getTime() - t.getTime()) / 86400000);
+    if (days >= 0 && days < 35) {
+      const wk = 4 - Math.floor(days / 7);
+      const wd = (t.getDay() + 6) % 7;
+      if (wk >= 0) heat[wk][wd] += 1;
+    }
+  });
+  const hmax = Math.max(1, ...heat.flat());
+
+  return {
+    artist: {
+      id: artist.id,
+      name: artist.display_name,
+      profession: artist.title || 'Artist',
+      initials: initialsOf(artist.display_name),
+      color: ACCENT,
+      revenue,
+      appts,
+      rating,
+      occupancy,
+      returnPct,
+      noShow: 0,
+      growth,
+      badge: rating >= 4.7 ? 'Excellent' : rating >= 4 ? 'Average' : 'Low',
+    },
+    customers,
+    score,
+    revenue6mo: months.map(({ m, nx, label }) => ({
+      label,
+      value: Math.round((active.filter((b) => inR(b, m, nx)).reduce((n, b) => n + money(b), 0) / 1000) * 10) / 10,
+    })),
+    appts6mo: months.map(({ m, nx, label }) => ({ label, value: active.filter((b) => inR(b, m, nx)).length })),
+    popular: [...svc.entries()].map(([name, booked]) => ({ name, booked })).sort((a, b) => b.booked - a.booked).slice(0, 3),
+    heatmap: heat.map((row) => row.map((c) => c / hmax)),
+    reviews: reviews
+      .filter((r) => r.comment && r.comment.trim())
+      .slice(0, 3)
+      .map((r) => ({ name: r.customer_name || 'Anonymous', stars: r.rating, text: r.comment })),
+    achievements: [],
+  };
+}
+
 export type Leader = { title: string; artist: ArtistPerf; value: string };
 
 export function leaderboards(artists: ArtistPerf[]): Leader[] {
