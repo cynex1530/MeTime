@@ -4,8 +4,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
-import { fetchMyLocations } from '../lib/api';
-import { ACCENT, ArtistPerf, leaderboards, SALON_DEMO, scopeStatsToService } from '../lib/salonStats';
+import { fetchMyLocations, fetchSalonAnalyticsData } from '../lib/api';
+import { ACCENT, ArtistPerf, computeSalonStats, leaderboards, SALON_DEMO, SalonStats, scopeStatsToService } from '../lib/salonStats';
+import { supabase } from '../lib/supabase';
 import { Salon } from '../types';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -186,6 +187,9 @@ export function SalonAnalyticsScreen() {
   const [dateRange, setDateRange] = useState('Last 30 days');
   const [serviceFilter, setServiceFilter] = useState('All');
 
+  // Base stats computed from the database (demo template until it loads / when empty)
+  const [baseStats, setBaseStats] = useState<SalonStats>(SALON_DEMO);
+
   useEffect(() => {
     if (profile)
       fetchMyLocations(profile.id).then((locs) => {
@@ -194,10 +198,19 @@ export function SalonAnalyticsScreen() {
       });
   }, [profile]);
 
+  // Read the selected salon's real data from the DB and compute the stats.
+  useEffect(() => {
+    if (!supabase) return;
+    const ids = salonId ? [salonId] : salons.map((s) => s.id);
+    const realIds = ids.filter((id) => id && !id.startsWith('local') && id !== 'l1');
+    if (!realIds.length) return;
+    fetchSalonAnalyticsData(realIds).then((data) => setBaseStats(computeSalonStats(data)));
+  }, [salonId, salons]);
+
   // Selecting a service scopes the ENTIRE dashboard to that service.
   const stats = useMemo(
-    () => (serviceFilter === 'All' ? SALON_DEMO : scopeStatsToService(SALON_DEMO, serviceFilter)),
-    [serviceFilter]
+    () => (serviceFilter === 'All' ? baseStats : scopeStatsToService(baseStats, serviceFilter)),
+    [serviceFilter, baseStats]
   );
 
   const selectedSalonName = salons.find((s) => s.id === salonId)?.name ?? stats.salonName;
@@ -210,8 +223,8 @@ export function SalonAnalyticsScreen() {
   );
   const filteredServices = stats.services.list;
 
-  // Service options come from the full dataset, not the scoped view.
-  const serviceOptions = ['All', ...SALON_DEMO.services.list.map((s) => s.name)];
+  // Service options come from the full (unscoped) base dataset.
+  const serviceOptions = ['All', ...baseStats.services.list.map((s) => s.name)];
 
   return (
     <Screen clearTabBar>

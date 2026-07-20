@@ -302,6 +302,23 @@ export async function assignSelfToSalon(
   }
 }
 
+/** Everything the Salon Dashboard needs for one or more salons. */
+export async function fetchSalonAnalyticsData(
+  salonIds: string[]
+): Promise<{ bookings: Booking[]; artists: Artist[]; reviews: any[] }> {
+  if (!supabase || !salonIds.length) return { bookings: [], artists: [], reviews: [] };
+  const [b, a, r] = await Promise.all([
+    supabase.from('bookings').select('*').in('salon_id', salonIds),
+    supabase.from('artists').select('*').in('salon_id', salonIds),
+    supabase.from('reviews').select('*').in('salon_id', salonIds),
+  ]);
+  return {
+    bookings: (b.data as Booking[]) ?? [],
+    artists: (a.data as Artist[]) ?? [],
+    reviews: r.data ?? [],
+  };
+}
+
 export async function fetchMyTeam(salonIds: string[]): Promise<Artist[]> {
   if (supabase && salonIds.length && !salonIds.includes('l1')) {
     const { data } = await supabase.from('artists').select('*').in('salon_id', salonIds).eq('is_active', true);

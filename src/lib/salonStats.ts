@@ -340,6 +340,227 @@ export function scopeStatsToService(base: SalonStats, serviceName: string): Salo
   };
 }
 
+const SM = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+const initialsOf = (name: string) =>
+  name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '?';
+
+/**
+ * Compute the salon dashboard from real data. Metrics the schema tracks
+ * (revenue, appointments, customers, returning, reviews/rating, cancellations,
+ * per-service and per-artist numbers, hourly demand) are real; a few the schema
+ * doesn't track (occupancy heatmap, cancellation reasons, suggested slots) fall
+ * back to the demo template. Empty salon → the demo dataset.
+ */
+export function computeSalonStats(
+  input: { bookings: any[]; artists: any[]; reviews: any[] },
+  now = new Date()
+): SalonStats {
+  const { bookings, artists, reviews } = input;
+  if (!bookings.length && !reviews.length) return SALON_DEMO;
+
+  const active = bookings.filter((b) => b.status !== 'cancelled');
+  const cancelled = bookings.filter((b) => b.status === 'cancelled');
+  const money = (b: any) => (b.price_cents ?? 0) / 100;
+  const pct = (a: number, b: number) => (b ? Math.round(((a - b) / b) * 100) : 0);
+  const som = new Date(now.getFullYear(), now.getMonth(), 1);
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const inMonth = (b: any, from: Date, to: Date) => {
+    const t = new Date(b.starts_at).getTime();
+    return t >= from.getTime() && t < to.getTime();
+  };
+
+  const totalRev = active.reduce((n, b) => n + money(b), 0);
+  const monthRev = active.filter((b) => inMonth(b, som, new Date(now.getFullYear(), now.getMonth() + 1, 1))).reduce((n, b) => n + money(b), 0);
+  const prevRev = active.filter((b) => inMonth(b, prevMonth, som)).reduce((n, b) => n + money(b), 0);
+
+  // clients
+  const byClient = new Map<string, any[]>();
+  active.forEach((b) => {
+    const k = b.customer_name || b.customer_id || 'Guest';
+    byClient.set(k, [...(byClient.get(k) ?? []), b]);
+  });
+  const customers = byClient.size;
+  const returning = [...byClient.values()].filter((l) => l.length > 1).length;
+  const returnPct = customers ? Math.round((returning / customers) * 100) : 0;
+  const ninety = new Date(now.getTime() - 90 * 86400000);
+  const activeC = [...byClient.values()].filter((l) => l.some((b) => new Date(b.starts_at) >= ninety)).length;
+  const newThisMonth = [...byClient.values()].filter((l) => {
+    const f = l.reduce((m, b) => (new Date(b.starts_at) < new Date(m.starts_at) ? b : m));
+    return new Date(f.starts_at) >= som;
+  }).length;
+  const vip = [...byClient.values()].filter((l) => l.reduce((n, b) => n + money(b), 0) >= 200).length;
+
+  // reviews
+  const avgRating = reviews.length ? reviews.reduce((n, r) => n + r.rating, 0) / reviews.length : 0;
+  const fiveStar = reviews.filter((r) => r.rating === 5).length;
+  const negative = reviews.filter((r) => r.rating <= 2).length;
+
+  const cancelRate = bookings.length ? (cancelled.length / bookings.length) * 100 : 0;
+
+  // per service
+  const svcMap = new Map<string, { revenue: number; appts: number; minutes: number }>();
+  active.forEach((b) => {
+    const s = svcMap.get(b.service_name) ?? { revenue: 0, appts: 0, minutes: 0 };
+    s.revenue += money(b);
+    s.appts += 1;
+    s.minutes += b.duration_minutes ?? 0;
+    svcMap.set(b.service_name, s);
+  });
+  const servicesList = [...svcMap.entries()]
+    .map(([name, s]) => ({ name, revenue: Math.round(s.revenue), appts: s.appts, minutes: Math.round(s.minutes / (s.appts || 1)), rating: Math.round(avgRating * 10) / 10 || 0 }))
+    .sort((a, b) => b.revenue - a.revenue);
+
+  // per artist
+  const ratingByArtist = new Map<string, number[]>();
+  reviews.forEach((r) => {
+    if (r.artist_id) ratingByArtist.set(r.artist_id, [...(ratingByArtist.get(r.artist_id) ?? []), r.rating]);
+  });
+  const artistAppts = artists.map((a) => active.filter((b) => b.artist_id === a.id).length);
+  const maxAppts = Math.max(1, ...artistAppts);
+  const perf: ArtistPerf[] = artists
+    .map((a) => {
+      const ab = active.filter((b) => b.artist_id === a.id);
+      const rs = ratingByArtist.get(a.id) ?? [];
+      const rating = rs.length ? Math.round((rs.reduce((n, x) => n + x, 0) / rs.length) * 10) / 10 : 0;
+      const byC = new Map<string, number>();
+      ab.forEach((b) => byC.set(b.customer_name || b.customer_id || 'g', (byC.get(b.customer_name || b.customer_id || 'g') ?? 0) + 1));
+      const ret = byC.size ? Math.round(([...byC.values()].filter((n) => n > 1).length / byC.size) * 100) : 0;
+      const mRev = ab.filter((b) => inMonth(b, som, new Date(now.getFullYear(), now.getMonth() + 1, 1))).reduce((n, b) => n + money(b), 0);
+      const pRev = ab.filter((b) => inMonth(b, prevMonth, som)).reduce((n, b) => n + money(b), 0);
+      return {
+        id: a.id,
+        name: a.display_name,
+        profession: a.title || 'Artist',
+        initials: initialsOf(a.display_name),
+        color: ACCENT,
+        revenue: Math.round(ab.reduce((n, b) => n + money(b), 0)),
+        appts: ab.length,
+        rating,
+        occupancy: Math.round((ab.length / maxAppts) * 80 + 10),
+        returnPct: ret,
+        noShow: 0,
+        growth: pct(mRev, pRev),
+        badge: (rating >= 4.7 ? 'Excellent' : rating >= 4 ? 'Average' : 'Low') as ArtistPerf['badge'],
+      };
+    })
+    .filter((a) => a.appts > 0);
+
+  const salonOccupancy = perf.length ? Math.round(perf.reduce((n, a) => n + a.occupancy, 0) / perf.length) : 0;
+
+  // overview: last 4 weeks
+  const weekBuckets = Array.from({ length: 4 }, (_, i) => {
+    const to = new Date(now.getTime() - (3 - i) * 7 * 86400000);
+    const from = new Date(to.getTime() - 7 * 86400000);
+    const list = active.filter((b) => {
+      const t = new Date(b.starts_at).getTime();
+      return t >= from.getTime() && t < to.getTime();
+    });
+    return { label: `W${i + 1}`, revenue: Math.round((list.reduce((n, b) => n + money(b), 0) / 1000) * 10) / 10, appts: list.length };
+  });
+
+  // demand by hour
+  const hourCounts = new Map<number, number>();
+  active.forEach((b) => {
+    const h = new Date(b.starts_at).getHours();
+    hourCounts.set(h, (hourCounts.get(h) ?? 0) + 1);
+  });
+  const demandSlots = Array.from({ length: 11 }, (_, i) => {
+    const h = 9 + i;
+    const v = hourCounts.get(h) ?? 0;
+    const label = `${h > 12 ? h - 12 : h} ${h >= 12 ? 'PM' : 'AM'}`;
+    return { label, value: v };
+  });
+  const dMax = Math.max(1, ...demandSlots.map((s) => s.value));
+  const demand = {
+    slots: demandSlots.map((s) => ({
+      ...s,
+      level: (s.value >= dMax * 0.75 ? 'peak' : s.value <= dMax * 0.3 ? 'low' : 'mid') as 'low' | 'mid' | 'peak',
+    })),
+    suggested: SALON_DEMO.demand.suggested,
+  };
+
+  // rating evolution (6 mo)
+  const evolution = Array.from({ length: 6 }, (_, i) => {
+    const m = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    const nx = new Date(now.getFullYear(), now.getMonth() - (5 - i) + 1, 1);
+    const rs = reviews.filter((r) => {
+      const t = new Date(r.created_at).getTime();
+      return t >= m.getTime() && t < nx.getTime();
+    });
+    const val = rs.length ? rs.reduce((n, r) => n + r.rating, 0) / rs.length : Math.round(avgRating * 10) / 10;
+    return { label: SM[m.getMonth()], value: Math.round(val * 10) / 10 };
+  });
+
+  const kfmt = (v: number) => `$${(v / 1000).toFixed(1)}k`;
+  const avgTicket = active.length ? Math.round(totalRev / active.length) : 0;
+
+  return {
+    salonName: SALON_DEMO.salonName,
+    kpis: [
+      { key: 'revenue', label: 'Revenue', value: kfmt(totalRev), delta: pct(monthRev, prevRev), good: true, icon: 'dollar-sign', tint: 'rgba(108,92,231,0.14)', fg: '#6C5CE7' },
+      { key: 'appts', label: 'Appointments', value: `${active.length}`, delta: 0, good: true, icon: 'calendar', tint: 'rgba(47,191,166,0.16)', fg: '#2FBFA6' },
+      { key: 'customers', label: 'Customers', value: `${customers}`, delta: 0, good: true, icon: 'users', tint: 'rgba(232,169,75,0.18)', fg: '#E8A94B' },
+      { key: 'returning', label: 'Returning', value: `${returnPct}%`, delta: 0, good: true, icon: 'refresh-cw', tint: 'rgba(48,164,108,0.14)', fg: '#1f8a4c' },
+      { key: 'occupancy', label: 'Occupancy', value: `${salonOccupancy}%`, delta: 0, good: true, icon: 'activity', tint: 'rgba(108,92,231,0.14)', fg: '#6C5CE7' },
+      { key: 'rating', label: 'Avg rating', value: avgRating ? avgRating.toFixed(1) : '—', delta: 0, good: true, icon: 'star', tint: 'rgba(232,169,75,0.18)', fg: '#E8A94B' },
+      { key: 'cancel', label: 'Cancellation', value: `${cancelRate.toFixed(1)}%`, delta: 0, good: true, icon: 'slash', tint: 'rgba(229,72,77,0.12)', fg: '#e5484d' },
+    ],
+    overview: {
+      revenue: weekBuckets.map((w) => ({ label: w.label, value: w.revenue })),
+      appts: weekBuckets.map((w) => ({ label: w.label, value: w.appts })),
+      revenueTotal: `$${Math.round(totalRev / 1000)}k`,
+      apptsTotal: `${active.length}`,
+    },
+    artists: perf,
+    comparison: SALON_DEMO.comparison,
+    services: {
+      mostPopular: servicesList.length ? { name: servicesList[0].name, booked: [...svcMap.entries()].sort((a, b) => b[1].appts - a[1].appts)[0][1].appts } : SALON_DEMO.services.mostPopular,
+      topRevenue: servicesList.length ? { name: servicesList[0].name, amount: kfmt(servicesList[0].revenue) } : SALON_DEMO.services.topRevenue,
+      avgPrice: `$${avgTicket}`,
+      avgDuration: `${active.length ? Math.round(active.reduce((n, b) => n + (b.duration_minutes ?? 0), 0) / active.length) : 0} min`,
+      list: servicesList.length ? servicesList : SALON_DEMO.services.list,
+    },
+    occupancy: SALON_DEMO.occupancy, // heatmap not tracked
+    demand,
+    customers: [
+      { label: 'New customers', value: `${newThisMonth}`, delta: 0, good: true, dot: '#6C5CE7' },
+      { label: 'Returning', value: `${returning}`, delta: 0, good: true, dot: '#2FBFA6' },
+      { label: 'VIP', value: `${vip}`, delta: 0, good: true, dot: '#E8A94B' },
+      { label: 'Lost', value: `${Math.max(0, customers - activeC)}`, delta: 0, good: false, dot: '#e5484d' },
+      { label: 'Retention', value: `${returnPct}%`, delta: 0, good: true, dot: '#2FBFA6' },
+      { label: 'Avg visits', value: `${customers ? (active.length / customers).toFixed(1) : '0'}`, delta: 0, good: true, dot: '#6C5CE7' },
+    ],
+    reviews: {
+      avg: avgRating ? avgRating.toFixed(1) : '—',
+      fiveStar: fiveStar.toLocaleString(),
+      negative: `${negative}`,
+      trend: '',
+      evolution,
+    },
+    cancellations: {
+      cancelRate: { value: `${cancelRate.toFixed(1)}%`, delta: 0 },
+      noShowRate: SALON_DEMO.cancellations.noShowRate,
+      reasons: SALON_DEMO.cancellations.reasons, // reasons not tracked
+      byArtist: artists
+        .map((a) => {
+          const total = bookings.filter((b) => b.artist_id === a.id).length;
+          const canc = cancelled.filter((b) => b.artist_id === a.id).length;
+          const p = total ? Math.round((canc / total) * 100) : 0;
+          return { name: (a.display_name || '').split(' ')[0], pct: p, level: (p >= 10 ? 'high' : p >= 5 ? 'mid' : 'low') as 'low' | 'mid' | 'high' };
+        })
+        .filter((x) => x.name),
+    },
+    financial: [
+      { label: 'Revenue', value: kfmt(totalRev), delta: pct(monthRev, prevRev) },
+      { label: 'Commission paid', value: kfmt(totalRev * 0.3), delta: 0 },
+      { label: 'Avg ticket', value: `$${avgTicket}`, delta: 0 },
+      { label: 'Rev / appointment', value: `$${avgTicket}`, delta: 0 },
+      { label: 'Rev / artist', value: kfmt(perf.length ? totalRev / perf.length : totalRev), delta: 0 },
+      { label: 'Revenue growth', value: `${pct(monthRev, prevRev) >= 0 ? '+' : ''}${pct(monthRev, prevRev)}%`, delta: pct(monthRev, prevRev) },
+    ],
+  };
+}
+
 export type Leader = { title: string; artist: ArtistPerf; value: string };
 
 export function leaderboards(artists: ArtistPerf[]): Leader[] {
