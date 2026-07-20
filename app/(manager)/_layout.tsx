@@ -4,11 +4,11 @@ import { makeFloatingTabBar } from '../../src/components/FloatingTabBar';
 
 /** Manager = worker tabs plus Locations and Team; starts on Locations. */
 const tabBar = makeFloatingTabBar([
-  { name: 'locations', label: 'Locations', icon: 'map-pin' },
-  { name: 'team', label: 'Team', icon: 'users' },
-  { name: 'schedule', label: 'Bookings', icon: 'calendar' },
-  { name: 'services', label: 'Services', icon: 'scissors' },
-  { name: 'profile', label: 'Profile', icon: 'user' },
+  { name: 'locations', labelKey: 'tab.locations', icon: 'map-pin' },
+  { name: 'team', labelKey: 'tab.team', icon: 'users' },
+  { name: 'schedule', labelKey: 'tab.bookings', icon: 'calendar' },
+  { name: 'services', labelKey: 'tab.services', icon: 'scissors' },
+  { name: 'profile', labelKey: 'tab.profile', icon: 'user' },
 ]);
 
 export default function ManagerLayout() {

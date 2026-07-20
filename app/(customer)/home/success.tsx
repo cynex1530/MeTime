@@ -3,10 +3,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { PrimaryButton, Screen } from '../../../src/components/ui';
+import { useT } from '../../../src/i18n/i18n';
 import { useTheme } from '../../../src/theme/ThemeContext';
 
 export default function Success() {
   const { theme } = useTheme();
+  const { t } = useT();
   const router = useRouter();
   const { salonName, artistName, serviceName, when } = useLocalSearchParams<{
     salonName?: string;
@@ -37,16 +39,16 @@ export default function Success() {
         <Feather name="check" size={40} color={theme.onInk} />
       </View>
       <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: -0.7, color: theme.text, marginTop: 24 }}>
-        You're booked!
+        {t('success.title')}
       </Text>
       <Text style={{ fontSize: 15, color: theme.textSecondary, marginTop: 10, textAlign: 'center', lineHeight: 22 }}>
-        {serviceName} with {artistName}{'\n'}
+        {serviceName} {t('success.with')} {artistName}{'\n'}
         {salonName} · {when}
       </Text>
 
       <View style={{ alignSelf: 'stretch', marginTop: 40, gap: 12 }}>
         <PrimaryButton
-          title="View my bookings"
+          title={t('success.viewBookings')}
           onPress={() => {
             resetHomeStack();
             router.navigate('/(customer)/bookings');
@@ -56,7 +58,7 @@ export default function Success() {
           onPress={resetHomeStack}
           style={{ textAlign: 'center', fontSize: 15, fontWeight: '600', color: theme.textSecondary, paddingVertical: 8 }}
         >
-          Back to home
+          {t('success.backHome')}
         </Text>
       </View>
     </Screen>

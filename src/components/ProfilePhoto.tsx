@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleProp, Text, View, ViewStyle } from 'react-native';
+import { useT } from '../i18n/i18n';
 import { uploadImage } from '../lib/upload';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -32,6 +33,7 @@ export function ProfilePhoto({
   showReplace?: boolean;
 }) {
   const { theme } = useTheme();
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
 
   // Box + corner radius per shape. Banner fills the available width.
@@ -47,11 +49,11 @@ export function ProfilePhoto({
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert(
-        'Photo access needed',
-        'Allow Me Time to access your photos to set an image. You can enable it in Settings.',
+        t('photo.permTitle'),
+        t('photo.permMsg'),
         [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          { text: t('photo.notNow'), style: 'cancel' },
+          { text: t('photo.openSettings'), onPress: () => Linking.openSettings() },
         ]
       );
       return;
@@ -73,9 +75,9 @@ export function ProfilePhoto({
   }
 
   function confirmRemove() {
-    Alert.alert('Remove photo?', 'This image will be removed.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => onChange(null) },
+    Alert.alert(t('photo.removeTitle'), t('photo.removeMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.remove'), style: 'destructive', onPress: () => onChange(null) },
     ]);
   }
 
@@ -118,7 +120,7 @@ export function ProfilePhoto({
                 })}
               >
                 <Feather name="refresh-cw" size={13} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Replace</Text>
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{t('photo.replace')}</Text>
               </Pressable>
             ) : null}
             <Pressable

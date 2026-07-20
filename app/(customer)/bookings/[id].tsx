@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { BackButton, Card, Screen, ScreenTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
+import { useT } from '../../../src/i18n/i18n';
 import { fetchMyBookings } from '../../../src/lib/api';
 import { formatBookingDate, formatPrice, formatTimeRange } from '../../../src/lib/format';
 import { useTheme } from '../../../src/theme/ThemeContext';
@@ -12,6 +13,7 @@ import { Booking } from '../../../src/types';
 export default function BookingDetail() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -28,7 +30,7 @@ export default function BookingDetail() {
 
   function callArtist() {
     if (!booking?.artist_phone) {
-      Alert.alert('No phone number', `${booking?.artist_name ?? 'This artist'} has no phone number on file yet.`);
+      Alert.alert(t('bd.noPhone'), t('bd.noPhoneMsg', { name: booking?.artist_name ?? 'This artist' }));
       return;
     }
     // tel: URLs must not contain spaces
@@ -36,11 +38,11 @@ export default function BookingDetail() {
   }
 
   const rows: Array<{ icon: keyof typeof Feather.glyphMap; label: string; value: string }> = [
-    { icon: 'scissors', label: 'Service', value: booking.service_name },
-    { icon: 'user', label: 'Artist', value: booking.artist_name ?? '—' },
-    { icon: 'calendar', label: 'When', value: `${formatBookingDate(booking.starts_at)} · ${formatTimeRange(booking.starts_at, booking.ends_at)}` },
-    { icon: 'map-pin', label: 'Where', value: `${booking.salon_name ?? ''}${booking.salon_area ? ` · ${booking.salon_area}` : ''}` },
-    { icon: 'tag', label: 'Price', value: formatPrice(booking.price_cents) },
+    { icon: 'scissors', label: t('bd.service'), value: booking.service_name },
+    { icon: 'user', label: t('bd.artist'), value: booking.artist_name ?? '—' },
+    { icon: 'calendar', label: t('bd.when'), value: `${formatBookingDate(booking.starts_at)} · ${formatTimeRange(booking.starts_at, booking.ends_at)}` },
+    { icon: 'map-pin', label: t('bd.where'), value: `${booking.salon_name ?? ''}${booking.salon_area ? ` · ${booking.salon_area}` : ''}` },
+    { icon: 'tag', label: t('bd.price'), value: formatPrice(booking.price_cents) },
   ];
 
   return (
@@ -48,7 +50,7 @@ export default function BookingDetail() {
       <BackButton />
       <ScreenTitle
         title={booking.salon_name ?? 'Booking'}
-        subtitle={booking.status === 'confirmed' ? 'Confirmed' : booking.status}
+        subtitle={booking.status === 'confirmed' ? t('bookings.confirmed') : booking.status}
       />
       <Card style={{ gap: 16 }}>
         {rows.map((r) => (
@@ -80,10 +82,10 @@ export default function BookingDetail() {
         })}
       >
         <Feather name="phone" size={17} color={theme.onInk} />
-        <Text style={{ color: theme.onInk, fontSize: 16, fontWeight: '700' }}>Call {artistFirstName} to cancel</Text>
+        <Text style={{ color: theme.onInk, fontSize: 16, fontWeight: '700' }}>{t('bd.call', { name: artistFirstName })}</Text>
       </Pressable>
       <Text style={{ fontSize: 13, color: theme.textFaint, textAlign: 'center', marginTop: 12, lineHeight: 18 }}>
-        Need to reschedule or cancel? Give {artistFirstName} a quick call.
+        {t('bd.callHint', { name: artistFirstName })}
       </Text>
 
       {/* Temporary: mark the appointment finished and leave a review */}
@@ -116,7 +118,7 @@ export default function BookingDetail() {
         })}
       >
         <Feather name="check-circle" size={17} color={theme.text} />
-        <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>Finish</Text>
+        <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{t('bd.finish')}</Text>
       </Pressable>
     </Screen>
   );

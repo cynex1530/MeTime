@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Card, Screen, ScreenTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
+import { useT } from '../../../src/i18n/i18n';
 import { fetchMyBookings } from '../../../src/lib/api';
 import { formatBookingDate, formatTime } from '../../../src/lib/format';
 import { useTheme } from '../../../src/theme/ThemeContext';
@@ -12,6 +13,7 @@ import { Booking } from '../../../src/types';
 export default function BookingsList() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
 
@@ -55,18 +57,18 @@ export default function BookingsList() {
 
   return (
     <Screen clearTabBar>
-      <ScreenTitle title="Bookings" subtitle="Your upcoming and past appointments" />
+      <ScreenTitle title={t('bookings.title')} subtitle={t('bookings.subtitle')} />
       <View style={{ gap: 12 }}>
         {upcoming.map(renderRow)}
         {upcoming.length === 0 ? (
           <Text style={{ color: theme.textSecondary, textAlign: 'center', marginVertical: 30 }}>
-            Nothing booked yet — find your next me time on Home.
+            {t('bookings.empty')}
           </Text>
         ) : null}
         {past.length > 0 ? (
           <>
             <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginTop: 20, marginBottom: 2 }}>
-              Past
+              {t('bookings.past')}
             </Text>
             {past.map(renderRow)}
           </>

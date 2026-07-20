@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, Text, View } from 'react-native';
 import { ImageSlot } from '../../../src/components/ImageSlot';
 import { BackButton, PrimaryButton, Screen } from '../../../src/components/ui';
+import { useT } from '../../../src/i18n/i18n';
 import { fetchSalonArtists } from '../../../src/lib/api';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Artist } from '../../../src/types';
@@ -20,6 +21,7 @@ const SIDE_PAD = (SCREEN_W - CARD_W) / 2;
  */
 export default function ArtistSelect() {
   const { theme } = useTheme();
+  const { t } = useT();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   const { salonId, salonName, catId } = useLocalSearchParams<{
@@ -56,7 +58,7 @@ export default function ArtistSelect() {
         <BackButton />
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 30, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>
-            Choose a pro
+            {t('artists.choose')}
           </Text>
           {salonName ? (
             <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 2 }}>{salonName}</Text>
@@ -109,11 +111,11 @@ export default function ArtistSelect() {
       {/* Swipe hint + Book CTA */}
       <View style={{ paddingHorizontal: 20, marginBottom: 30 }}>
         <Text style={{ textAlign: 'center', fontSize: 13, color: theme.textFaint, marginBottom: 14 }}>
-          Swipe to change
+          {t('artists.swipe')}
         </Text>
         <PrimaryButton
           floating
-          title={selected ? `Book ${selected.display_name}` : 'Book'}
+          title={selected ? t('artists.book', { name: selected.display_name }) : t('book.title')}
           disabled={!selected}
           onPress={() =>
             router.push({

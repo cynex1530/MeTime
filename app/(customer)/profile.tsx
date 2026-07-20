@@ -6,11 +6,13 @@ import { ProfilePhoto } from '../../src/components/ProfilePhoto';
 import { Segmented } from '../../src/components/Segmented';
 import { Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
+import { LANGUAGES, useT } from '../../src/i18n/i18n';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 export default function CustomerProfile() {
   const { theme, isDark, setDark } = useTheme();
   const { profile, signOut, updateProfile } = useAuth();
+  const { t, lang, setLang } = useT();
   const router = useRouter();
 
   const [name, setName] = useState(profile?.full_name ?? '');
@@ -30,39 +32,46 @@ export default function CustomerProfile() {
 
   return (
     <Screen clearTabBar>
-      <ScreenTitle title="Profile" />
+      <ScreenTitle title={t('profile.title')} />
       <View style={{ alignItems: 'center', marginBottom: 20 }}>
         <ProfilePhoto
           uri={profile?.avatar_url}
           userId={profile?.id ?? 'me'}
           size={110}
           shape="circle"
-          caption="Add photo"
+          caption={t('photo.add')}
           showReplace={false}
           onChange={(avatar_url) => updateProfile({ avatar_url })}
         />
       </View>
 
       <View style={{ gap: 12 }}>
-        <Field label="Full name" value={name} onChangeText={setName} autoCapitalize="words" />
-        <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <Field label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+1 555 0100" />
+        <Field label={t('auth.fullName')} value={name} onChangeText={setName} autoCapitalize="words" />
+        <Field label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Field label={t('profile.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+1 555 0100" />
         {dirty ? (
           <PrimaryButton
-            title="Save changes"
+            title={t('common.saveChanges')}
             onPress={() => updateProfile({ full_name: name, email, phone: phone || null })}
           />
         ) : null}
       </View>
 
-      <SectionTitle>Appearance</SectionTitle>
+      <SectionTitle>{t('profile.appearance')}</SectionTitle>
       <Segmented
         options={[
-          { value: 'light', label: '☀  Light' },
-          { value: 'dark', label: '☾  Dark' },
+          { value: 'light', label: t('profile.light') },
+          { value: 'dark', label: t('profile.dark') },
         ]}
         value={isDark ? 'dark' : 'light'}
         onChange={(v) => setDark(v === 'dark')}
+      />
+
+      <SectionTitle>{t('profile.language')}</SectionTitle>
+      <Segmented
+        options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+        value={lang}
+        onChange={setLang}
       />
 
       <Pressable
@@ -85,7 +94,7 @@ export default function CustomerProfile() {
         })}
       >
         <Feather name="log-out" size={17} color={theme.destructive} />
-        <Text style={{ color: theme.destructive, fontSize: 16, fontWeight: '700' }}>Log out</Text>
+        <Text style={{ color: theme.destructive, fontSize: 16, fontWeight: '700' }}>{t('common.logout')}</Text>
       </Pressable>
     </Screen>
   );

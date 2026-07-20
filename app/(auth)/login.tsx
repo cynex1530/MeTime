@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { BackButton, Field, PrimaryButton, Screen } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useT } from '../../src/i18n/i18n';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 export default function Login() {
   const { theme } = useTheme();
   const { signIn } = useAuth();
+  const { t } = useT();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,21 +21,21 @@ export default function Login() {
     setBusy(true);
     const err = await signIn(email.trim(), password);
     setBusy(false);
-    if (err) Alert.alert('Sign in failed', err);
+    if (err) Alert.alert(t('auth.signInFailed'), err);
     else router.replace('/');
   }
 
   return (
     <Screen>
       <BackButton />
-      <Text style={{ fontSize: 32, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>Sign in</Text>
+      <Text style={{ fontSize: 32, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>{t('login.title')}</Text>
       <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 4, marginBottom: 24 }}>
-        Good to see you again.
+        {t('login.subtitle')}
       </Text>
 
       <View style={{ gap: 12 }}>
         <Field
-          label="Email"
+          label={t('auth.email')}
           value={email}
           onChangeText={setEmail}
           placeholder="you@example.com"
@@ -42,7 +44,7 @@ export default function Login() {
           autoComplete="email"
         />
         <Field
-          label="Password"
+          label={t('auth.password')}
           value={password}
           onChangeText={setPassword}
           placeholder="••••••••"
@@ -50,25 +52,25 @@ export default function Login() {
           rightIcon={showPw ? 'eye-off' : 'eye'}
           onRightIconPress={() => setShowPw((v) => !v)}
         />
-        <PrimaryButton title="Sign in" onPress={submit} loading={busy} disabled={!email || !password} />
+        <PrimaryButton title={t('login.title')} onPress={submit} loading={busy} disabled={!email || !password} />
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 22 }}>
         <View style={{ flex: 1, height: 1, backgroundColor: theme.hairline }} />
-        <Text style={{ fontSize: 13, color: theme.textFaint }}>or</Text>
+        <Text style={{ fontSize: 13, color: theme.textFaint }}>{t('auth.or')}</Text>
         <View style={{ flex: 1, height: 1, backgroundColor: theme.hairline }} />
       </View>
 
       <View style={{ gap: 10 }}>
         <SocialButton
-          label="Continue with Google"
+          label={t('auth.google')}
           icon={<AntDesign name="google" size={18} color="#4285F4" />}
           bg={theme.card}
           fg={theme.text}
           border={theme.cardBorder}
         />
         <SocialButton
-          label="Continue with Apple"
+          label={t('auth.apple')}
           icon={<AntDesign name="apple" size={18} color="#fff" />}
           bg="#1c1c1e"
           fg="#ffffff"
@@ -77,7 +79,7 @@ export default function Login() {
 
       <Link href="/(auth)/register" asChild>
         <Text style={{ textAlign: 'center', marginTop: 22, fontSize: 15, color: theme.textSecondary }}>
-          New here? <Text style={{ fontWeight: '700', color: theme.text }}>Create an account</Text>
+          {t('auth.newHere')} <Text style={{ fontWeight: '700', color: theme.text }}>{t('auth.createOne')}</Text>
         </Text>
       </Link>
     </Screen>
@@ -97,9 +99,10 @@ export function SocialButton({
   fg: string;
   border?: string;
 }) {
+  const { t } = useT();
   return (
     <Pressable
-      onPress={() => Alert.alert('Coming soon', 'Social sign-in requires an OAuth provider configured in Supabase.')}
+      onPress={() => Alert.alert(t('auth.comingSoon'), t('auth.socialSoon'))}
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',

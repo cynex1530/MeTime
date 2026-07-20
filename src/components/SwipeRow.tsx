@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { useT } from '../i18n/i18n';
 import { useTheme } from '../theme/ThemeContext';
 
 /**
@@ -22,6 +23,7 @@ export function SwipeRow({
   onPress?: () => void;
 }) {
   const { theme } = useTheme();
+  const { t } = useT();
   const ref = React.useRef<Swipeable>(null);
 
   const leftEdit = () => (
@@ -44,7 +46,7 @@ export function SwipeRow({
         }}
       >
         <Feather name="edit-2" size={18} color={theme.onInk} />
-        <Text style={{ color: theme.onInk, fontSize: 15, fontWeight: '700' }}>Edit</Text>
+        <Text style={{ color: theme.onInk, fontSize: 15, fontWeight: '700' }}>{t('common.edit')}</Text>
       </Pressable>
     </View>
   );
@@ -67,7 +69,7 @@ export function SwipeRow({
           gap: 8,
         }}
       >
-        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Delete</Text>
+        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>{t('common.delete')}</Text>
         <Feather name="trash-2" size={18} color="#fff" />
       </Pressable>
     </View>

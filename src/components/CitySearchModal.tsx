@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '../i18n/i18n';
 import { CITIES } from '../lib/sampleData';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -25,6 +26,7 @@ export function CitySearchModal({
   onSelect: (city: string) => void;
 }) {
   const { theme } = useTheme();
+  const { t } = useT();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [locating, setLocating] = useState(false);
@@ -94,7 +96,7 @@ export function CitySearchModal({
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search a city or area"
+              placeholder={t('city.search')}
               placeholderTextColor={theme.textFaint}
               autoFocus
               returnKeyType="done"
@@ -106,7 +108,7 @@ export function CitySearchModal({
             />
           </View>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>Done</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>{t('common.done')}</Text>
           </Pressable>
         </View>
 
@@ -133,7 +135,7 @@ export function CitySearchModal({
           ) : (
             <Feather name="navigation" size={18} color={theme.iconStroke} />
           )}
-          <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>Use current location</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>{t('city.useLocation')}</Text>
         </Pressable>
 
         {/* Typed-but-new city */}
@@ -151,7 +153,7 @@ export function CitySearchModal({
           >
             <Feather name="plus" size={18} color={theme.iconStroke} />
             <Text style={{ fontSize: 16, color: theme.text }}>
-              Use “<Text style={{ fontWeight: '700' }}>{query.trim()}</Text>”
+              {t('city.use')} “<Text style={{ fontWeight: '700' }}>{query.trim()}</Text>”
             </Text>
           </Pressable>
         ) : null}
@@ -168,7 +170,7 @@ export function CitySearchModal({
             marginBottom: 8,
           }}
         >
-          Suggestions
+          {t('city.suggestions')}
         </Text>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -200,7 +202,7 @@ export function CitySearchModal({
             </Pressable>
           ))}
           {filtered.length === 0 && !typedIsNew ? (
-            <Text style={{ padding: 16, fontSize: 15, color: theme.textSecondary }}>No matches.</Text>
+            <Text style={{ padding: 16, fontSize: 15, color: theme.textSecondary }}>{t('city.noMatches')}</Text>
           ) : null}
         </ScrollView>
       </View>

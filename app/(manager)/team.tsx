@@ -6,6 +6,7 @@ import { ConfirmDialog, Sheet } from '../../src/components/Sheet';
 import { SwipeRow } from '../../src/components/SwipeRow';
 import { Card, Field, PrimaryButton, Screen, ScreenTitle } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useT } from '../../src/i18n/i18n';
 import { fetchMyLocations, fetchMyTeam } from '../../src/lib/api';
 import { supabase } from '../../src/lib/supabase';
 import { useTheme } from '../../src/theme/ThemeContext';
@@ -14,6 +15,7 @@ import { Artist, Salon } from '../../src/types';
 export default function Team() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   const [locs, setLocs] = useState<Salon[]>([]);
   const [team, setTeam] = useState<Artist[]>([]);
 
@@ -41,7 +43,7 @@ export default function Team() {
   }, [profile]);
 
   const locName = (id: string | null) =>
-    locs.find((l) => l.id === id)?.name ?? locs[0]?.name ?? 'No location';
+    locs.find((l) => l.id === id)?.name ?? locs[0]?.name ?? t('profile.noSalon');
   const detail = team.find((a) => a.id === detailId);
   const multiLoc = locs.length > 1;
 
@@ -71,23 +73,23 @@ export default function Team() {
         .insert({ salon_id: salonId, display_name: local.display_name, email: local.email, title: local.title })
         .select()
         .single();
-      setTeam((t) => [...t, (data as Artist) ?? local]);
+      setTeam((prev) => [...prev, (data as Artist) ?? local]);
     } else {
-      setTeam((t) => [...t, local]);
+      setTeam((prev) => [...prev, local]);
     }
     setShowAdd(false);
     setAddF({ name: '', email: '', password: '' });
   }
 
   async function reassign(artistId: string, salonId: string) {
-    setTeam((t) => t.map((a) => (a.id === artistId ? { ...a, salon_id: salonId } : a)));
+    setTeam((prev) => prev.map((a) => (a.id === artistId ? { ...a, salon_id: salonId } : a)));
     if (supabase && !artistId.startsWith('local') && !artistId.startsWith('ma')) {
       await supabase.from('artists').update({ salon_id: salonId }).eq('id', artistId);
     }
   }
 
   async function removeArtist(id: string) {
-    setTeam((t) => t.filter((a) => a.id !== id));
+    setTeam((prev) => prev.filter((a) => a.id !== id));
     if (supabase && !id.startsWith('local') && !id.startsWith('ma')) {
       await supabase.from('artists').update({ is_active: false }).eq('id', id);
     }
@@ -119,7 +121,7 @@ export default function Team() {
         style={{ paddingHorizontal: 16, paddingVertical: 12 }}
       >
         <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary }}>
-          Assign to
+          {t('team.assignTo')}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>{locName(value)}</Text>
@@ -151,7 +153,7 @@ export default function Team() {
 
   return (
     <Screen clearTabBar>
-      <ScreenTitle title="Team" subtitle="Swipe an artist to remove them" />
+      <ScreenTitle title={t('team.title')} subtitle={t('team.subtitle')} />
       <View style={{ gap: 12 }}>
         {team.map((a) => (
           <SwipeRow
@@ -195,17 +197,17 @@ export default function Team() {
           }}
         >
           <Feather name="plus" size={18} color={theme.iconStroke} />
-          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>Add artist</Text>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>{t('team.add')}</Text>
         </Pressable>
       </View>
 
       {/* Add artist sheet */}
       <Sheet visible={showAdd} onClose={() => setShowAdd(false)}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>Add artist</Text>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>{t('team.add')}</Text>
         <View style={{ gap: 12 }}>
-          <Field label="Full name" value={addF.name} onChangeText={(v) => setAddF({ ...addF, name: v })} placeholder="Danny Kim" autoCapitalize="words" />
-          <Field label="Email" value={addF.email} onChangeText={(v) => setAddF({ ...addF, email: v })} placeholder="danny@salon.com" keyboardType="email-address" autoCapitalize="none" />
-          <Field label="Temp password" value={addF.password} onChangeText={(v) => setAddF({ ...addF, password: v })} placeholder="They change it on first login" secureTextEntry />
+          <Field label={t('auth.fullName')} value={addF.name} onChangeText={(v) => setAddF({ ...addF, name: v })} placeholder="Danny Kim" autoCapitalize="words" />
+          <Field label={t('auth.email')} value={addF.email} onChangeText={(v) => setAddF({ ...addF, email: v })} placeholder="danny@salon.com" keyboardType="email-address" autoCapitalize="none" />
+          <Field label={t('team.tempPassword')} value={addF.password} onChangeText={(v) => setAddF({ ...addF, password: v })} placeholder={t('team.tempHint')} secureTextEntry />
           <AssignSelector
             value={addLocId}
             expanded={showAssign}
@@ -215,7 +217,7 @@ export default function Team() {
               setShowAssign(false);
             }}
           />
-          <PrimaryButton title="Add artist" disabled={!addF.name.trim()} onPress={addArtist} />
+          <PrimaryButton title={t('team.add')} disabled={!addF.name.trim()} onPress={addArtist} />
         </View>
       </Sheet>
 
@@ -229,7 +231,7 @@ export default function Team() {
           <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 2 }}>{detail?.title}</Text>
         </View>
         <View style={{ gap: 12 }}>
-          <Field label="Email" value={detail?.email ?? ''} editable={false} />
+          <Field label={t('auth.email')} value={detail?.email ?? ''} editable={false} />
           <AssignSelector
             value={detail?.salon_id ?? null}
             expanded={showDetailAssign}
@@ -240,14 +242,14 @@ export default function Team() {
             }}
           />
           <Field
-            label="Reset password"
+            label={t('profile.resetPassword')}
             value={detailPw}
             onChangeText={setDetailPw}
-            placeholder="New temp password"
+            placeholder={t('profile.newPassword')}
             secureTextEntry
           />
           <PrimaryButton
-            title="Save"
+            title={t('common.save')}
             disabled={detailPw.length > 0 && detailPw.length < 8}
             onPress={() => setDetailId(null)}
           />
@@ -257,9 +259,9 @@ export default function Team() {
       {/* Confirm delete */}
       <ConfirmDialog
         visible={delId !== null}
-        title="Remove artist?"
+        title={t('team.removeTitle')}
         message={`${team.find((a) => a.id === delId)?.display_name ?? 'This artist'} will be removed from your team.`}
-        confirmLabel="Delete"
+        confirmLabel={t('common.delete')}
         onCancel={() => setDelId(null)}
         onConfirm={() => {
           if (delId) removeArtist(delId);

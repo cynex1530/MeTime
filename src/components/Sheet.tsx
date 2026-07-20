@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '../i18n/i18n';
 import { useTheme } from '../theme/ThemeContext';
 import { radii } from '../theme/tokens';
 import { Grabber } from './ui';
@@ -77,6 +78,7 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   const { theme } = useTheme();
+  const { t } = useT();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={{ flex: 1, backgroundColor: theme.scrim, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
@@ -92,7 +94,7 @@ export function ConfirmDialog({
               onPress={onCancel}
               style={{ flex: 1, paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: theme.hairlineStrong, alignItems: 'center' }}
             >
-              <Animated.Text style={{ color: theme.text, fontWeight: '600' }}>Cancel</Animated.Text>
+              <Animated.Text style={{ color: theme.text, fontWeight: '600' }}>{t('common.cancel')}</Animated.Text>
             </Pressable>
             <Pressable
               onPress={onConfirm}

@@ -7,6 +7,7 @@ import { fetchArtistSchedule, fetchMyArtistRow, cancelBooking, rescheduleBooking
 import { formatBookingDate, formatTimeRange, WEEKDAYS } from '../lib/format';
 import { generateDaySlots } from '../lib/schedule';
 import { useAuth } from '../hooks/useAuth';
+import { useT } from '../i18n/i18n';
 import { useTheme } from '../theme/ThemeContext';
 import { Artist, Booking } from '../types';
 
@@ -21,6 +22,7 @@ function nextDays(count: number) {
 export function ScheduleScreen() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [artist, setArtist] = useState<Artist | null>(null);
   const [reschId, setReschId] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function ScheduleScreen() {
 
   return (
     <Screen clearTabBar>
-      <ScreenTitle title="Schedule" subtitle="Swipe a booking to edit or delete" />
+      <ScreenTitle title={t('schedule.title')} subtitle={t('schedule.subtitle')} />
       <View style={{ gap: 12 }}>
         {bookings.map((b) => {
           const d = new Date(b.starts_at);
@@ -103,7 +105,7 @@ export function ScheduleScreen() {
         })}
         {bookings.length === 0 ? (
           <Text style={{ color: theme.textSecondary, textAlign: 'center', marginTop: 40 }}>
-            No upcoming bookings.
+            {t('schedule.none')}
           </Text>
         ) : null}
       </View>
@@ -111,13 +113,13 @@ export function ScheduleScreen() {
       {/* Delete confirmation */}
       <ConfirmDialog
         visible={delId !== null}
-        title="Delete booking?"
+        title={t('schedule.deleteTitle')}
         message={(() => {
           const b = bookings.find((x) => x.id === delId);
           if (!b) return '';
           return `${b.customer_name} · ${formatBookingDate(b.starts_at)}, ${formatTimeRange(b.starts_at, b.ends_at)}`;
         })()}
-        confirmLabel="Delete"
+        confirmLabel={t('common.delete')}
         onCancel={() => setDelId(null)}
         onConfirm={() => {
           if (delId) {
@@ -130,11 +132,11 @@ export function ScheduleScreen() {
 
       {/* Reschedule sheet */}
       <Sheet visible={reschId !== null} onClose={() => setReschId(null)}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 4 }}>Reschedule</Text>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 4 }}>{t('schedule.reschedule')}</Text>
         <Text style={{ fontSize: 14, color: theme.textSecondary, marginBottom: 16 }}>
           {resch?.customer_name} · {resch?.service_name}
         </Text>
-        <Text style={{ fontSize: 15, color: theme.textSecondary, marginBottom: 10 }}>Pick a new day</Text>
+        <Text style={{ fontSize: 15, color: theme.textSecondary, marginBottom: 10 }}>{t('schedule.pickDay')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
           {days.map((d) => {
             const sel = selDay?.toDateString() === d.toDateString();
@@ -166,7 +168,7 @@ export function ScheduleScreen() {
         </View>
         {selDay ? (
           <>
-            <Text style={{ fontSize: 15, color: theme.textSecondary, marginBottom: 10 }}>Pick a time</Text>
+            <Text style={{ fontSize: 15, color: theme.textSecondary, marginBottom: 10 }}>{t('schedule.pickTime')}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
               {generateDaySlots(
                 artist?.open_hour,
@@ -198,7 +200,7 @@ export function ScheduleScreen() {
             </View>
           </>
         ) : null}
-        <PrimaryButton title="Save changes" disabled={!selDay || !selTime} onPress={confirmReschedule} />
+        <PrimaryButton title={t('common.saveChanges')} disabled={!selDay || !selTime} onPress={confirmReschedule} />
       </Sheet>
     </Screen>
   );

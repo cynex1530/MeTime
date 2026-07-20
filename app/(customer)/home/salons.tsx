@@ -4,12 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { ImageSlot } from '../../../src/components/ImageSlot';
 import { BackButton, Card, GlassBadge, Screen, ScreenTitle } from '../../../src/components/ui';
+import { useT } from '../../../src/i18n/i18n';
 import { fetchSalons } from '../../../src/lib/api';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Salon } from '../../../src/types';
 
 export default function SalonList() {
   const { theme } = useTheme();
+  const { t } = useT();
   const router = useRouter();
   const { catId, catName } = useLocalSearchParams<{ catId: string; catName?: string }>();
   const [salons, setSalons] = useState<Salon[]>([]);
@@ -21,7 +23,7 @@ export default function SalonList() {
   return (
     <Screen clearTabBar>
       <BackButton />
-      <ScreenTitle title={catName ?? 'Salons'} subtitle={`${salons.length} places near you`} />
+      <ScreenTitle title={catName ?? 'Salons'} subtitle={t('salons.near', { n: salons.length })} />
       <View style={{ gap: 14 }}>
         {salons.map((s) => (
           <Card
@@ -56,7 +58,7 @@ export default function SalonList() {
         ))}
         {salons.length === 0 ? (
           <Text style={{ color: theme.textSecondary, textAlign: 'center', marginTop: 40 }}>
-            No salons in this category yet.
+            {t('salons.none')}
           </Text>
         ) : null}
       </View>

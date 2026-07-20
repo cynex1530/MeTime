@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { RingProgress } from '../components/RingProgress';
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
+import { useT } from '../i18n/i18n';
 import { ArtistReview, fetchArtistReviews, fetchMyArtistRow, fetchStatsBookings } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { BookingKey, computeStats, DEMO_STATS, formatMoney, RevenueKey, Stats } from '../lib/stats';
@@ -76,6 +77,7 @@ function Pills<T extends string>({
 export function DashboardScreen() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   // Real data from the database; the demo dataset is only used with no backend.
   const [stats, setStats] = useState<Stats>(supabase ? computeStats([]) : DEMO_STATS);
   const [reviews, setReviews] = useState<ArtistReview[]>([]);
@@ -101,9 +103,9 @@ export function DashboardScreen() {
 
   const rev = revKey === 'custom' ? null : stats.revenue[revKey];
   const book = stats.bookings[bookKey];
-  const bookNoun =
-    bookKey === 'today' ? 'today' : bookKey === 'tomorrow' ? 'tomorrow' : bookKey === 'week' ? 'this week' : 'this month';
-  const trendMax = useMemo(() => Math.max(...stats.trend.map((t) => t.value), 1), [stats.trend]);
+  const apptsLabel =
+    bookKey === 'today' ? t('dash.apptsToday') : bookKey === 'tomorrow' ? t('dash.apptsTomorrow') : bookKey === 'week' ? t('dash.apptsWeek') : t('dash.apptsMonth');
+  const trendMax = useMemo(() => Math.max(...stats.trend.map((pt) => pt.value), 1), [stats.trend]);
 
   const barGrey = theme.isDark ? 'rgba(235,235,245,0.22)' : '#d3d3d8';
 
@@ -112,8 +114,8 @@ export function DashboardScreen() {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 }}>
         <BackButton />
         <View>
-          <Text style={{ fontSize: 30, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>Dashboard</Text>
-          <Text style={{ fontSize: 14, color: theme.textSecondary }}>Your salon at a glance</Text>
+          <Text style={{ fontSize: 30, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>{t('dash.title')}</Text>
+          <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t('dash.subtitle')}</Text>
         </View>
       </View>
 
@@ -121,16 +123,16 @@ export function DashboardScreen() {
         {/* REVENUE */}
         <Card style={{ gap: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Label>REVENUE</Label>
+            <Label>{t('dash.revenue')}</Label>
             <GreenBadge label={rev && rev.deltaPct ? `+${rev.deltaPct}%` : undefined} />
           </View>
           <Pills<RevenueKey>
             options={[
-              { key: 'today', label: 'Today' },
-              { key: 'week', label: 'This week' },
-              { key: 'month', label: 'This month' },
-              { key: 'year', label: 'This year' },
-              { key: 'custom', label: 'Custom' },
+              { key: 'today', label: t('dash.today') },
+              { key: 'week', label: t('dash.week') },
+              { key: 'month', label: t('dash.month') },
+              { key: 'year', label: t('dash.year') },
+              { key: 'custom', label: t('dash.custom') },
             ]}
             value={revKey}
             onChange={setRevKey}
@@ -144,27 +146,27 @@ export function DashboardScreen() {
             </View>
           ) : (
             <Text style={{ fontSize: 15, color: theme.textSecondary, paddingVertical: 8 }}>
-              Pick a start and end date to see revenue for a custom range.
+              {t('dash.customRangeHint')}
             </Text>
           )}
         </Card>
 
         {/* BOOKINGS */}
         <Card style={{ gap: 14 }}>
-          <Label>BOOKINGS</Label>
+          <Label>{t('dash.bookings')}</Label>
           <Pills<BookingKey>
             options={[
-              { key: 'today', label: 'Today' },
-              { key: 'tomorrow', label: 'Tomorrow' },
-              { key: 'week', label: 'This week' },
-              { key: 'month', label: 'This month' },
+              { key: 'today', label: t('dash.today') },
+              { key: 'tomorrow', label: t('dash.tomorrow') },
+              { key: 'week', label: t('dash.week') },
+              { key: 'month', label: t('dash.month') },
             ]}
             value={bookKey}
             onChange={setBookKey}
           />
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
             <Text style={{ fontSize: 38, fontWeight: '800', color: theme.text }}>{book.total}</Text>
-            <Text style={{ fontSize: 16, color: theme.textSecondary, marginBottom: 8 }}>appointments {bookNoun}</Text>
+            <Text style={{ fontSize: 16, color: theme.textSecondary, marginBottom: 8 }}>{apptsLabel}</Text>
           </View>
           {bookKey === 'today' && book.done !== undefined ? (
             <View style={{ gap: 8 }}>
@@ -181,11 +183,11 @@ export function DashboardScreen() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.text }} />
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>{book.done} done</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>{book.done} {t('dash.done')}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: barGrey }} />
-                  <Text style={{ fontSize: 14, color: theme.textSecondary }}>{book.todo} to do</Text>
+                  <Text style={{ fontSize: 14, color: theme.textSecondary }}>{book.todo} {t('dash.todo')}</Text>
                 </View>
               </View>
             </View>
@@ -194,20 +196,20 @@ export function DashboardScreen() {
 
         {/* CLIENTS */}
         <Card style={{ gap: 12 }}>
-          <Label>CLIENTS</Label>
+          <Label>{t('dash.clients')}</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
             {[
-              { n: stats.clients.all, t: 'All clients', s: 'total' },
-              { n: stats.clients.new, t: 'New', s: 'this month' },
-              { n: stats.clients.returning, t: 'Returning', s: 'booked again' },
-              { n: stats.clients.active, t: 'Active', s: 'last 90 days' },
+              { n: stats.clients.all, title: t('dash.allClients'), s: t('dash.clientsTotal') },
+              { n: stats.clients.new, title: t('dash.new'), s: t('dash.clientsThisMonth') },
+              { n: stats.clients.returning, title: t('dash.returning'), s: t('dash.bookedAgain') },
+              { n: stats.clients.active, title: t('dash.active'), s: t('dash.last90') },
             ].map((c) => (
               <View
-                key={c.t}
+                key={c.title}
                 style={{ width: '47%', backgroundColor: theme.bg, borderRadius: 16, padding: 16 }}
               >
                 <Text style={{ fontSize: 26, fontWeight: '800', color: theme.text }}>{c.n}</Text>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text, marginTop: 4 }}>{c.t}</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text, marginTop: 4 }}>{c.title}</Text>
                 <Text style={{ fontSize: 13, color: theme.textSecondary }}>{c.s}</Text>
               </View>
             ))}
@@ -218,18 +220,18 @@ export function DashboardScreen() {
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
           <RingProgress pct={stats.returnRate.pct} />
           <View style={{ flex: 1, gap: 6 }}>
-            <Label>RETURN RATE</Label>
+            <Label>{t('dash.returnRate')}</Label>
             <Text style={{ fontSize: 15, color: theme.textSecondary, lineHeight: 21 }}>
-              {stats.returnRate.returned} of {stats.returnRate.all} clients came back to book again.
+              {t('dash.returnRateDesc', { returned: stats.returnRate.returned, all: stats.returnRate.all })}
             </Text>
-            <GreenBadge label={stats.returnRate.deltaPts ? `+${stats.returnRate.deltaPts} pts vs last month` : undefined} />
+            <GreenBadge label={stats.returnRate.deltaPts ? t('dash.returnRateDelta', { n: stats.returnRate.deltaPts }) : undefined} />
           </View>
         </Card>
 
         {/* REVENUE BY SERVICE */}
         <Card style={{ gap: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Label>REVENUE BY SERVICE</Label>
+            <Label>{t('dash.byService')}</Label>
             <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>
               {formatMoney(stats.byService.reduce((n, s) => n + s.amount, 0))}
             </Text>
@@ -252,27 +254,27 @@ export function DashboardScreen() {
         {/* REVENUE TREND */}
         <Card style={{ gap: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Label>REVENUE TREND</Label>
+            <Label>{t('dash.trend')}</Label>
             <GreenBadge label={stats.revenue.month.deltaPct ? `+${stats.revenue.month.deltaPct}%` : undefined} />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {stats.trend.map((t) => (
+            {stats.trend.map((pt) => (
               <Text
-                key={t.label}
-                style={{ flex: 1, textAlign: 'center', fontSize: 12, color: t.current ? theme.text : theme.textTertiary, fontWeight: t.current ? '800' : '600' }}
+                key={pt.label}
+                style={{ flex: 1, textAlign: 'center', fontSize: 12, color: pt.current ? theme.text : theme.textTertiary, fontWeight: pt.current ? '800' : '600' }}
               >
-                {t.value}k
+                {pt.value}k
               </Text>
             ))}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 130, gap: 10 }}>
-            {stats.trend.map((t) => (
-              <View key={t.label} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
+            {stats.trend.map((pt) => (
+              <View key={pt.label} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
                 <View
                   style={{
                     width: '100%',
-                    height: Math.max(8, (t.value / trendMax) * 120),
-                    backgroundColor: t.current ? theme.text : barGrey,
+                    height: Math.max(8, (pt.value / trendMax) * 120),
+                    backgroundColor: pt.current ? theme.text : barGrey,
                     borderTopLeftRadius: 8,
                     borderTopRightRadius: 8,
                   }}
@@ -281,12 +283,12 @@ export function DashboardScreen() {
             ))}
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {stats.trend.map((t) => (
+            {stats.trend.map((pt) => (
               <Text
-                key={t.label}
-                style={{ flex: 1, textAlign: 'center', fontSize: 13, color: t.current ? theme.text : theme.textSecondary, fontWeight: t.current ? '800' : '500' }}
+                key={pt.label}
+                style={{ flex: 1, textAlign: 'center', fontSize: 13, color: pt.current ? theme.text : theme.textSecondary, fontWeight: pt.current ? '800' : '500' }}
               >
-                {t.label}
+                {pt.label}
               </Text>
             ))}
           </View>
@@ -294,7 +296,7 @@ export function DashboardScreen() {
 
         {/* TOP CLIENTS */}
         <Card style={{ gap: 14 }}>
-          <Label>TOP CLIENTS</Label>
+          <Label>{t('dash.topClients')}</Label>
           {stats.topClients.map((c, i) => (
             <View key={c.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View
@@ -313,7 +315,7 @@ export function DashboardScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>{c.name}</Text>
-                <Text style={{ fontSize: 13, color: theme.textSecondary }}>{c.visits} visits</Text>
+                <Text style={{ fontSize: 13, color: theme.textSecondary }}>{c.visits} {t('dash.visits')}</Text>
               </View>
               <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>{formatMoney(c.amount)}</Text>
             </View>
@@ -322,7 +324,7 @@ export function DashboardScreen() {
 
         {/* GROWTH */}
         <Card style={{ gap: 2 }}>
-          <Label>GROWTH VS LAST MONTH</Label>
+          <Label>{t('dash.growth')}</Label>
           {stats.growth.map((g, i) => (
             <View
               key={g.label}
@@ -347,14 +349,14 @@ export function DashboardScreen() {
         {/* RATING & RECENT REVIEWS */}
         <Card style={{ gap: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Label>RATING</Label>
+            <Label>{t('dash.rating')}</Label>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ fontSize: 20, color: '#E8A94B' }}>★</Text>
               <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text }}>
                 {avgRating ? avgRating.toFixed(1) : '—'}
               </Text>
               <Text style={{ fontSize: 14, color: theme.textSecondary }}>
-                ({reviews.length} review{reviews.length === 1 ? '' : 's'})
+                {reviews.length === 1 ? t('dash.reviewCount', { n: reviews.length }) : t('dash.reviewsCount', { n: reviews.length })}
               </Text>
             </View>
           </View>
@@ -364,7 +366,7 @@ export function DashboardScreen() {
               <View key={i} style={{ paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.hairline }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={{ fontSize: 15, fontWeight: '800', color: theme.text }}>
-                    {r.customer_name || 'Anonymous'}
+                    {r.customer_name || t('dash.anonymous')}
                   </Text>
                   <Text style={{ fontSize: 14, color: '#E8A94B', letterSpacing: 1 }}>{'★'.repeat(r.rating)}</Text>
                 </View>
@@ -372,7 +374,7 @@ export function DashboardScreen() {
               </View>
             ))
           ) : (
-            <Text style={{ fontSize: 14, color: theme.textSecondary }}>No written reviews yet.</Text>
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t('dash.noReviews')}</Text>
           )}
         </Card>
       </View>

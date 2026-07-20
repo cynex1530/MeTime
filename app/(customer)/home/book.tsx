@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { BackButton, Card, PrimaryButton, Screen, SectionTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
+import { useT } from '../../../src/i18n/i18n';
 import { createBooking, fetchArtistById, fetchArtistServices } from '../../../src/lib/api';
 import { formatDuration, formatPrice, WEEKDAYS } from '../../../src/lib/format';
 import { generateDaySlots } from '../../../src/lib/schedule';
@@ -26,6 +27,7 @@ function nextDays(count: number) {
 export default function Book() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   const router = useRouter();
   const { salonId, salonName, artistId, artistName, catId } = useLocalSearchParams<{
     salonId: string;
@@ -113,13 +115,13 @@ export default function Book() {
   return (
     <Screen>
       <BackButton />
-      <Text style={{ fontSize: 32, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>Book</Text>
+      <Text style={{ fontSize: 32, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>{t('book.title')}</Text>
       <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 4 }}>
         {artistName} · {salonName}
       </Text>
 
       {/* Step 1 — service (always shown) */}
-      <SectionTitle>Service</SectionTitle>
+      <SectionTitle>{t('book.service')}</SectionTitle>
       <View style={{ gap: 10 }}>
         {services.map((s) => {
           const sel = s.id === serviceId;
@@ -161,7 +163,7 @@ export default function Book() {
       {/* Step 2 — day (revealed once a service is picked) */}
       {service ? (
         <>
-          <SectionTitle>Day</SectionTitle>
+          <SectionTitle>{t('book.day')}</SectionTitle>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {days.map((d) => {
               const sel = selDay?.toDateString() === d.toDateString();
@@ -195,7 +197,7 @@ export default function Book() {
       {/* Step 3 — time (revealed once a day is picked; slots follow the day) */}
       {service && selDay ? (
         <>
-          <SectionTitle>Time</SectionTitle>
+          <SectionTitle>{t('book.time')}</SectionTitle>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {daySlots.map(({ time, available }) => {
               const sel = selTime === time;
@@ -223,7 +225,7 @@ export default function Book() {
       ) : null}
 
       <PrimaryButton
-        title="Confirm booking"
+        title={t('book.confirm')}
         disabled={!canConfirm}
         loading={busy}
         onPress={confirm}

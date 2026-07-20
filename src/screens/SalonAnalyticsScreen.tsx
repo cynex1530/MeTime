@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
+import { useT } from '../i18n/i18n';
 import { fetchMyLocations, fetchSalonAnalyticsData } from '../lib/api';
 import { ACCENT, ArtistPerf, computeSalonStats, leaderboards, SALON_DEMO, SalonStats, scopeStatsToService } from '../lib/salonStats';
 import { supabase } from '../lib/supabase';
@@ -174,10 +175,22 @@ function Badge({ kind }: { kind: ArtistPerf['badge'] }) {
 export function SalonAnalyticsScreen() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   const router = useRouter();
 
   const [metric, setMetric] = useState<'revenue' | 'appts'>('revenue');
   const [query, setQuery] = useState('');
+
+  // Date-range state stores stable English keys; labels are translated for display.
+  const rangeLabel = (k: string) =>
+    ({
+      Today: t('sa.today'),
+      'Last 7 days': t('sa.last7'),
+      'Last 30 days': t('sa.last30'),
+      'Last 90 days': t('sa.last90'),
+      'This year': t('sa.thisYear'),
+    } as Record<string, string>)[k] ?? k;
+  const RANGE_KEYS = ['Today', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'This year'];
 
   // Owner's salons + selected one (selector appears when there's more than one)
   const [salons, setSalons] = useState<Salon[]>([]);
@@ -223,17 +236,14 @@ export function SalonAnalyticsScreen() {
   );
   const filteredServices = stats.services.list;
 
-  // Service options come from the full (unscoped) base dataset.
-  const serviceOptions = ['All', ...baseStats.services.list.map((s) => s.name)];
-
   return (
     <Screen clearTabBar>
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 }}>
         <BackButton />
         <View>
-          <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>Salon Analytics</Text>
-          <Text style={{ fontSize: 14, color: theme.textSecondary }}>{selectedSalonName} · full performance</Text>
+          <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>{t('sa.title')}</Text>
+          <Text style={{ fontSize: 14, color: theme.textSecondary }}>{selectedSalonName} · {t('sa.subtitle')}</Text>
         </View>
       </View>
 
@@ -241,7 +251,7 @@ export function SalonAnalyticsScreen() {
       {salons.length > 1 ? (
         <View style={{ marginBottom: 12 }}>
           <FilterDropdown
-            label="Salon"
+            label={t('sa.salon')}
             value={selectedSalonName}
             options={salons.map((s) => s.name)}
             onSelect={(name) => setSalonId(salons.find((s) => s.name === name)?.id ?? null)}
@@ -252,12 +262,17 @@ export function SalonAnalyticsScreen() {
       {/* Filters (working dropdowns; export/print removed) */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }} style={{ marginBottom: 18 }}>
         <FilterDropdown
-          label="Date range"
-          value={dateRange}
-          options={['Today', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'This year']}
-          onSelect={setDateRange}
+          label={t('sa.dateRange')}
+          value={rangeLabel(dateRange)}
+          options={RANGE_KEYS.map(rangeLabel)}
+          onSelect={(label) => setDateRange(RANGE_KEYS.find((k) => rangeLabel(k) === label) ?? dateRange)}
         />
-        <FilterDropdown label="Service" value={serviceFilter} options={serviceOptions} onSelect={setServiceFilter} />
+        <FilterDropdown
+          label={t('sa.service')}
+          value={serviceFilter === 'All' ? t('common.all') : serviceFilter}
+          options={[t('common.all'), ...baseStats.services.list.map((s) => s.name)]}
+          onSelect={(v) => setServiceFilter(v === t('common.all') ? 'All' : v)}
+        />
       </ScrollView>
 
       {/* KPI grid */}
@@ -282,11 +297,11 @@ export function SalonAnalyticsScreen() {
       <Card style={{ marginTop: 16, gap: 14 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <View>
-            <Label>OVERVIEW</Label>
+            <Label>{t('sa.overview')}</Label>
             <Text style={{ fontSize: 30, fontWeight: '800', color: theme.text, marginTop: 4 }}>
               {metric === 'revenue' ? stats.overview.revenueTotal : stats.overview.apptsTotal}
             </Text>
-            <Text style={{ fontSize: 13, color: theme.textSecondary }}>{dateRange}</Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary }}>{rangeLabel(dateRange)}</Text>
           </View>
           <View style={{ gap: 8 }}>
             {(['revenue', 'appts'] as const).map((m) => (
@@ -301,7 +316,7 @@ export function SalonAnalyticsScreen() {
                 }}
               >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: metric === m ? '#fff' : theme.textSecondary }}>
-                  {m === 'revenue' ? 'Revenue' : 'Appointments'}
+                  {m === 'revenue' ? t('sa.revenue') : t('sa.appointments')}
                 </Text>
               </Pressable>
             ))}
@@ -334,10 +349,10 @@ export function SalonAnalyticsScreen() {
         {/* range toggle — shares state with the top Date range filter */}
         <View style={{ flexDirection: 'row', backgroundColor: theme.bg, borderRadius: 999, padding: 4 }}>
           {[
-            { k: 'Last 7 days', l: '7 Days' },
-            { k: 'Last 30 days', l: '30 Days' },
-            { k: 'Last 90 days', l: '3 Months' },
-            { k: 'This year', l: '12 Months' },
+            { k: 'Last 7 days', l: t('sa.range7') },
+            { k: 'Last 30 days', l: t('sa.range30') },
+            { k: 'Last 90 days', l: t('sa.range3mo') },
+            { k: 'This year', l: t('sa.range12mo') },
           ].map((r) => (
             <Pressable
               key={r.k}
@@ -352,7 +367,7 @@ export function SalonAnalyticsScreen() {
 
       {/* Artist performance */}
       <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: -0.5, color: theme.text, marginTop: 26, marginBottom: 12 }}>
-        Artist performance
+        {t('sa.artistPerf')}
       </Text>
       <View
         style={{
@@ -372,7 +387,7 @@ export function SalonAnalyticsScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search artists or profession"
+          placeholder={t('sa.searchArtists')}
           placeholderTextColor={theme.textFaint}
           style={{ flex: 1, fontSize: 16, color: theme.text, padding: 0 }}
         />
@@ -390,10 +405,10 @@ export function SalonAnalyticsScreen() {
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               {[
-                { v: `$${(a.revenue / 1000).toFixed(1)}k`, l: 'Revenue' },
-                { v: `${a.appts}`, l: 'Appts' },
-                { v: `${a.rating}`, l: 'Rating' },
-                { v: `${a.occupancy}%`, l: 'Occupancy' },
+                { v: `$${(a.revenue / 1000).toFixed(1)}k`, l: t('sa.revenue') },
+                { v: `${a.appts}`, l: t('sa.appts') },
+                { v: `${a.rating}`, l: t('sa.rating') },
+                { v: `${a.occupancy}%`, l: t('sa.occupancy') },
               ].map((s) => (
                 <View key={s.l}>
                   <Text style={{ fontSize: 17, fontWeight: '800', color: theme.text }}>{s.v}</Text>
@@ -403,7 +418,7 @@ export function SalonAnalyticsScreen() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.hairline }}>
               <Text style={{ fontSize: 13, color: theme.textSecondary }}>
-                Return <Text style={{ fontWeight: '700', color: theme.text }}>{a.returnPct}%</Text>
+                {t('sa.return')} <Text style={{ fontWeight: '700', color: theme.text }}>{a.returnPct}%</Text>
               </Text>
               <View style={{ marginLeft: 14 }}>
                 <Delta delta={a.growth} good={a.growth >= 0} />
@@ -412,7 +427,7 @@ export function SalonAnalyticsScreen() {
                 onPress={() => router.push({ pathname: '/salon-artist/[id]', params: { id: a.id } })}
                 style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 3 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '700', color: PURPLE }}>View</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: PURPLE }}>{t('sa.view')}</Text>
                 <Feather name="chevron-right" size={16} color={PURPLE} />
               </Pressable>
             </View>
@@ -422,7 +437,7 @@ export function SalonAnalyticsScreen() {
 
       {/* Leaderboards */}
       <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: -0.5, color: theme.text, marginTop: 26, marginBottom: 12 }}>
-        Leaderboards
+        {t('sa.leaderboards')}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
         {leaders.map((l) => (
@@ -447,18 +462,18 @@ export function SalonAnalyticsScreen() {
       </View>
 
       {/* SERVICES ANALYTICS */}
-      <H2>Services analytics</H2>
+      <H2>{t('sa.servicesAnalytics')}</H2>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
         {[
-          { l: 'MOST POPULAR', v: stats.services.mostPopular.name, s: `${stats.services.mostPopular.booked} booked` },
-          { l: 'TOP REVENUE', v: stats.services.topRevenue.name, s: stats.services.topRevenue.amount },
-          { l: 'AVG PRICE', v: stats.services.avgPrice, s: 'per service' },
-          { l: 'AVG DURATION', v: stats.services.avgDuration, s: 'per appt' },
-        ].map((t) => (
-          <Card key={t.l} style={{ width: '47%' }}>
-            <Label>{t.l}</Label>
-            <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text, marginTop: 6 }}>{t.v}</Text>
-            <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>{t.s}</Text>
+          { l: t('sa.mostPopular'), v: stats.services.mostPopular.name, s: t('sa.booked', { n: stats.services.mostPopular.booked }) },
+          { l: t('sa.topRevenue'), v: stats.services.topRevenue.name, s: stats.services.topRevenue.amount },
+          { l: t('sa.avgPrice'), v: stats.services.avgPrice, s: t('sa.perService') },
+          { l: t('sa.avgDuration'), v: stats.services.avgDuration, s: t('sa.perAppt') },
+        ].map((it) => (
+          <Card key={it.l} style={{ width: '47%' }}>
+            <Label>{it.l}</Label>
+            <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text, marginTop: 6 }}>{it.v}</Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>{it.s}</Text>
           </Card>
         ))}
       </View>
@@ -475,7 +490,7 @@ export function SalonAnalyticsScreen() {
                 <View style={{ width: `${(s.revenue / max) * 100}%`, height: '100%', backgroundColor: PURPLE, borderRadius: 999 }} />
               </View>
               <Text style={{ fontSize: 13, color: theme.textSecondary }}>
-                {s.appts} appts · {s.minutes} min · ★ {s.rating}
+                {s.appts} {t('sa.apptsUnit')} · {s.minutes} min · ★ {s.rating}
               </Text>
             </View>
           );
@@ -484,7 +499,7 @@ export function SalonAnalyticsScreen() {
 
       {/* OCCUPANCY BY DAY */}
       <Card style={{ marginTop: 16, gap: 12 }}>
-        <Label>OCCUPANCY BY DAY</Label>
+        <Label>{t('sa.occupancyByDay')}</Label>
         <View style={{ flexDirection: 'row', paddingLeft: 92 }}>
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
             <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '700', color: theme.textTertiary }}>
@@ -509,7 +524,7 @@ export function SalonAnalyticsScreen() {
 
       {/* TIME-SLOT DEMAND */}
       <Card style={{ marginTop: 16, gap: 12 }}>
-        <Label>TIME-SLOT DEMAND</Label>
+        <Label>{t('sa.timeSlotDemand')}</Label>
         {(() => {
           const max = Math.max(...stats.demand.slots.map((s) => s.value));
           return stats.demand.slots.map((s) => {
@@ -529,7 +544,7 @@ export function SalonAnalyticsScreen() {
           });
         })()}
         <View style={{ height: 1, backgroundColor: theme.hairline, marginTop: 4 }} />
-        <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>Suggested free slots</Text>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: theme.text }}>{t('sa.suggestedSlots')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {stats.demand.suggested.map((s) => (
             <View key={s} style={{ backgroundColor: theme.bg, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 }}>
@@ -540,7 +555,7 @@ export function SalonAnalyticsScreen() {
       </Card>
 
       {/* CUSTOMER ANALYTICS */}
-      <H2>Customer analytics</H2>
+      <H2>{t('sa.customerAnalytics')}</H2>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
         {stats.customers.map((c) => (
           <Card key={c.label} style={{ width: '47%' }}>
@@ -559,22 +574,22 @@ export function SalonAnalyticsScreen() {
       </View>
 
       {/* REVIEWS */}
-      <H2>Reviews</H2>
+      <H2>{t('sa.reviews')}</H2>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
         {[
-          { l: 'Average rating', v: `★ ${stats.reviews.avg}`, green: false },
-          { l: '5-star reviews', v: stats.reviews.fiveStar, green: false },
-          { l: 'Negative reviews', v: stats.reviews.negative, green: false },
-          { l: 'Review trend', v: stats.reviews.trend, green: true },
-        ].map((t) => (
-          <Card key={t.l} style={{ width: '47%' }}>
-            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t.l}</Text>
-            <Text style={{ fontSize: 24, fontWeight: '800', color: t.green ? GREEN : theme.text, marginTop: 6 }}>{t.v}</Text>
+          { l: t('sa.avgRating'), v: `★ ${stats.reviews.avg}`, green: false },
+          { l: t('sa.fiveStar'), v: stats.reviews.fiveStar, green: false },
+          { l: t('sa.negativeReviews'), v: stats.reviews.negative, green: false },
+          { l: t('sa.reviewTrend'), v: stats.reviews.trend, green: true },
+        ].map((it) => (
+          <Card key={it.l} style={{ width: '47%' }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{it.l}</Text>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: it.green ? GREEN : theme.text, marginTop: 6 }}>{it.v}</Text>
           </Card>
         ))}
       </View>
       <Card style={{ marginTop: 14, gap: 12 }}>
-        <Label>RATING EVOLUTION</Label>
+        <Label>{t('sa.ratingEvolution')}</Label>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           {stats.reviews.evolution.map((e, i) => (
             <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 12, color: theme.textTertiary, fontWeight: '600' }}>
@@ -599,18 +614,18 @@ export function SalonAnalyticsScreen() {
       </Card>
 
       {/* CANCELLATIONS & NO-SHOWS */}
-      <H2>Cancellations</H2>
+      <H2>{t('sa.cancellations')}</H2>
       <Card>
-        <Text style={{ fontSize: 14, color: theme.textSecondary }}>Cancellation rate</Text>
+        <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t('sa.cancelRate')}</Text>
         <Text style={{ fontSize: 26, fontWeight: '800', color: theme.text, marginTop: 6 }}>
           {stats.cancellations.cancelRate.value}
         </Text>
         <Text style={{ fontSize: 13, fontWeight: '700', color: GREEN, marginTop: 6 }}>
-          ▼ {stats.cancellations.cancelRate.delta}% vs last month
+          ▼ {stats.cancellations.cancelRate.delta}% {t('sa.vsLastMonth')}
         </Text>
       </Card>
       <Card style={{ marginTop: 14, gap: 12 }}>
-        <Label>CANCELLATIONS BY ARTIST</Label>
+        <Label>{t('sa.cancByArtist')}</Label>
         {stats.cancellations.byArtist.map((a) => {
           const color = a.level === 'high' ? RED : a.level === 'mid' ? AMBER : GREEN_BAR;
           const max = Math.max(...stats.cancellations.byArtist.map((x) => x.pct));
@@ -627,15 +642,15 @@ export function SalonAnalyticsScreen() {
       </Card>
 
       {/* FINANCIAL */}
-      <H2>Financial</H2>
+      <H2>{t('sa.financial')}</H2>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
-        {stats.financial.map((t) => (
-          <Card key={t.label} style={{ width: '47%' }}>
-            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t.label}</Text>
+        {stats.financial.map((it) => (
+          <Card key={it.label} style={{ width: '47%' }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{it.label}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 6 }}>
-              <Text style={{ fontSize: 24, fontWeight: '800', color: theme.text }}>{t.value}</Text>
+              <Text style={{ fontSize: 24, fontWeight: '800', color: theme.text }}>{it.value}</Text>
               <View style={{ marginBottom: 4 }}>
-                <DeltaInline delta={t.delta} good />
+                <DeltaInline delta={it.delta} good />
               </View>
             </View>
           </Card>

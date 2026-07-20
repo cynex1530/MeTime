@@ -4,6 +4,7 @@ import { Pressable, Switch, Text, View } from 'react-native';
 import { Sheet } from '../components/Sheet';
 import { Card, Chip, Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
+import { useT } from '../i18n/i18n';
 import { deleteService, fetchMyArtistRow, fetchMyServices } from '../lib/api';
 import { formatDuration, formatPrice, HOUR_OPTIONS, SLOT_OPTIONS } from '../lib/format';
 import { supabase } from '../lib/supabase';
@@ -17,6 +18,7 @@ const BREAK_MINUTES = [15, 30, 45, 60, 90];
 export function ServicesScreen() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   const [artistId, setArtistId] = useState<string>('me');
   const [services, setServices] = useState<Service[]>([]);
   const [workDays, setWorkDays] = useState<Record<string, boolean>>({
@@ -127,7 +129,7 @@ export function ServicesScreen() {
 
   return (
     <Screen clearTabBar>
-      <ScreenTitle title="Services" subtitle="What you offer and when you work" />
+      <ScreenTitle title={t('services.title')} subtitle={t('services.subtitle')} />
 
       <View style={{ gap: 10 }}>
         {services.map((s) => (
@@ -166,11 +168,11 @@ export function ServicesScreen() {
           }}
         >
           <Feather name="plus" size={18} color={theme.iconStroke} />
-          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>Add service</Text>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>{t('services.add')}</Text>
         </Pressable>
       </View>
 
-      <SectionTitle>Working days</SectionTitle>
+      <SectionTitle>{t('services.workingDays')}</SectionTitle>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {DAY_ORDER.map((d) => (
           <Chip
@@ -182,12 +184,12 @@ export function ServicesScreen() {
         ))}
       </View>
 
-      <SectionTitle>Hours</SectionTitle>
+      <SectionTitle>{t('services.hours')}</SectionTitle>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         {(
           [
-            { key: 'open' as const, label: 'OPENS', value: openHour },
-            { key: 'close' as const, label: 'CLOSES', value: closeHour },
+            { key: 'open' as const, label: t('services.opens'), value: openHour },
+            { key: 'close' as const, label: t('services.closes'), value: closeHour },
           ]
         ).map((h) => (
           <Card key={h.key} onPress={() => setHourPicker(h.key)} style={{ flex: 1 }}>
@@ -202,9 +204,9 @@ export function ServicesScreen() {
         ))}
       </View>
 
-      <SectionTitle>Slot length</SectionTitle>
+      <SectionTitle>{t('services.slotLength')}</SectionTitle>
       <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 10, marginTop: -6 }}>
-        Every service uses this length. Changes apply from tomorrow.
+        {t('services.slotHint')}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {SLOT_OPTIONS.map((o) => (
@@ -219,7 +221,7 @@ export function ServicesScreen() {
           />
         ))}
         <Chip
-          label="Custom"
+          label={t('services.custom')}
           selected={customOpen}
           onPress={() => {
             setCustomOpen(true);
@@ -230,7 +232,7 @@ export function ServicesScreen() {
       {customOpen ? (
         <View style={{ marginTop: 10 }}>
           <Field
-            label="Custom length (minutes)"
+            label={t('services.customMinutes')}
             value={customVal}
             onChangeText={(v) => {
               const digits = v.replace(/[^0-9]/g, '');
@@ -244,10 +246,10 @@ export function ServicesScreen() {
         </View>
       ) : null}
       {slotLen !== savedSlotLen ? (
-        <PrimaryButton title="Save slot length" onPress={saveSlotLength} style={{ marginTop: 12 }} />
+        <PrimaryButton title={t('services.saveSlot')} onPress={saveSlotLength} style={{ marginTop: 12 }} />
       ) : null}
 
-      <SectionTitle>Lunch break</SectionTitle>
+      <SectionTitle>{t('services.lunch')}</SectionTitle>
       {lunchBreak ? (
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Feather name="coffee" size={18} color={theme.iconStroke} />
@@ -255,7 +257,7 @@ export function ServicesScreen() {
             <Text style={{ fontSize: 16, fontWeight: '700', color: theme.text }}>
               {lunchBreak.start} · {lunchBreak.minutes} min
             </Text>
-            <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 1 }}>Every working day</Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 1 }}>{t('services.everyDay')}</Text>
           </View>
           <Pressable
             hitSlop={8}
@@ -295,13 +297,13 @@ export function ServicesScreen() {
           }}
         >
           <Feather name="plus" size={18} color={theme.iconStroke} />
-          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>Add lunch break</Text>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>{t('services.addLunch')}</Text>
         </Pressable>
       )}
 
-      <SectionTitle>Time off</SectionTitle>
+      <SectionTitle>{t('services.timeOff')}</SectionTitle>
       <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>Vacation mode</Text>
+        <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>{t('services.vacation')}</Text>
         <Switch
           value={vacOn}
           onValueChange={setVacOn}
@@ -315,7 +317,7 @@ export function ServicesScreen() {
           <Card key={v.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <Feather name="calendar" size={18} color={theme.iconStroke} />
             <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: theme.text }}>{v.label}</Text>
-            <Pressable hitSlop={10} onPress={() => setTimeOff((t) => t.filter((x) => x.id !== v.id))}>
+            <Pressable hitSlop={10} onPress={() => setTimeOff((list) => list.filter((x) => x.id !== v.id))}>
               <Feather name="x" size={18} color={theme.iconStroke} />
             </Pressable>
           </Card>
@@ -333,24 +335,24 @@ export function ServicesScreen() {
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>Add time off</Text>
+          <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{t('services.addTimeOff')}</Text>
         </Pressable>
       </View>
 
       {/* Add / edit service sheet */}
       <Sheet visible={showAdd} onClose={() => setShowAdd(false)}>
         <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>
-          {editServiceId ? 'Edit service' : 'Add service'}
+          {editServiceId ? t('services.edit') : t('services.add')}
         </Text>
         <View style={{ gap: 12 }}>
-          <Field label="Service name" value={f.name} onChangeText={(v) => setF({ ...f, name: v })} placeholder="Classic Cut" />
-          <Field label="Price ($)" value={f.price} onChangeText={(v) => setF({ ...f, price: v })} placeholder="35" keyboardType="decimal-pad" />
+          <Field label={t('services.serviceName')} value={f.name} onChangeText={(v) => setF({ ...f, name: v })} placeholder="Classic Cut" />
+          <Field label={t('services.price')} value={f.price} onChangeText={(v) => setF({ ...f, price: v })} placeholder="35" keyboardType="decimal-pad" />
           {/* Duration is fixed to the slot length — not chosen per service */}
           <Text style={{ fontSize: 13, color: theme.textSecondary }}>
-            Duration: {formatDuration(slotLen)} (your slot length)
+            {t('services.duration', { d: formatDuration(slotLen) })}
           </Text>
           <PrimaryButton
-            title={editServiceId ? 'Save service' : 'Add service'}
+            title={editServiceId ? t('common.save') : t('services.add')}
             disabled={!f.name.trim()}
             onPress={saveService}
           />
@@ -360,7 +362,7 @@ export function ServicesScreen() {
       {/* Hour picker sheet */}
       <Sheet visible={hourPicker !== null} onClose={() => setHourPicker(null)}>
         <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>
-          {hourPicker === 'open' ? 'Opens at' : 'Closes at'}
+          {hourPicker === 'open' ? t('services.opensAt') : t('services.closesAt')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 10 }}>
           {HOUR_OPTIONS.map((h) => {
@@ -394,12 +396,12 @@ export function ServicesScreen() {
 
       {/* Add time off sheet */}
       <Sheet visible={showAddVac} onClose={() => setShowAddVac(false)}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>Add time off</Text>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>{t('services.addTimeOff')}</Text>
         <View style={{ gap: 12 }}>
-          <Field label="Start" value={vacF.start} onChangeText={(v) => setVacF({ ...vacF, start: v })} placeholder="Jul 20" />
-          <Field label="End" value={vacF.end} onChangeText={(v) => setVacF({ ...vacF, end: v })} placeholder="Jul 27" />
+          <Field label={t('services.start')} value={vacF.start} onChangeText={(v) => setVacF({ ...vacF, start: v })} placeholder="Jul 20" />
+          <Field label={t('services.end')} value={vacF.end} onChangeText={(v) => setVacF({ ...vacF, end: v })} placeholder="Jul 27" />
           <PrimaryButton
-            title="Add time off"
+            title={t('services.addTimeOff')}
             disabled={!vacF.start || !vacF.end}
             onPress={() => {
               setTimeOff((t) => [...t, { id: `vac-${Date.now()}`, label: `${vacF.start} – ${vacF.end}` }]);
@@ -412,22 +414,22 @@ export function ServicesScreen() {
 
       {/* Lunch break sheet */}
       <Sheet visible={showLunch} onClose={() => setShowLunch(false)}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 4 }}>Lunch break</Text>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 4 }}>{t('services.lunch')}</Text>
         <Text style={{ fontSize: 14, color: theme.textSecondary, marginBottom: 16 }}>
-          Applied to every working day at the same time.
+          {t('services.lunchApplied')}
         </Text>
 
         <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary, marginBottom: 8 }}>
-          Start time
+          {t('services.startTime')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-          {LUNCH_TIMES.map((t) => (
-            <Chip key={t} label={t} selected={lunchF.start === t} onPress={() => setLunchF((p) => ({ ...p, start: t }))} />
+          {LUNCH_TIMES.map((lt) => (
+            <Chip key={lt} label={lt} selected={lunchF.start === lt} onPress={() => setLunchF((p) => ({ ...p, start: lt }))} />
           ))}
         </View>
 
         <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary, marginBottom: 8 }}>
-          Break length
+          {t('services.breakLength')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
           {BREAK_MINUTES.map((m) => (
@@ -441,7 +443,7 @@ export function ServicesScreen() {
         </View>
 
         <PrimaryButton
-          title="Save lunch break"
+          title={t('services.saveLunch')}
           onPress={() => {
             setLunchBreak({ start: lunchF.start, minutes: lunchF.minutes });
             persistSchedule({ lunch_start: lunchF.start, lunch_minutes: lunchF.minutes });

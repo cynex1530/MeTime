@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { BackButton, Card, PrimaryButton, Screen } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
+import { useT } from '../../../src/i18n/i18n';
 import { finishBooking } from '../../../src/lib/api';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Booking } from '../../../src/types';
@@ -11,6 +12,7 @@ import { Booking } from '../../../src/types';
 export default function ReviewScreen() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
   const router = useRouter();
   const params = useLocalSearchParams<{
     id: string;
@@ -43,9 +45,9 @@ export default function ReviewScreen() {
   return (
     <Screen clearTabBar>
       <BackButton />
-      <Text style={{ fontSize: 32, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>Leave a review</Text>
+      <Text style={{ fontSize: 32, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>{t('review.title')}</Text>
       <Text style={{ fontSize: 14, color: theme.textSecondary, marginTop: 4, marginBottom: 20 }}>
-        How was your appointment?
+        {t('review.subtitle')}
       </Text>
 
       {/* Who / what / where */}
@@ -77,7 +79,7 @@ export default function ReviewScreen() {
         ))}
       </View>
       <Text style={{ textAlign: 'center', fontSize: 14, color: theme.textSecondary, marginTop: 10 }}>
-        {rating === 0 ? 'Tap a star to rate' : `${rating} / 5`}
+        {rating === 0 ? t('review.tapStar') : `${rating} / 5`}
       </Text>
 
       {/* Text review */}
@@ -92,12 +94,12 @@ export default function ReviewScreen() {
         }}
       >
         <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary, marginBottom: 6 }}>
-          Your review
+          {t('review.your')}
         </Text>
         <TextInput
           value={comment}
           onChangeText={setComment}
-          placeholder="Share a few words about the service…"
+          placeholder={t('review.placeholder')}
           placeholderTextColor={theme.textFaint}
           multiline
           style={{ fontSize: 16, color: theme.text, minHeight: 90, textAlignVertical: 'top' }}
@@ -105,7 +107,7 @@ export default function ReviewScreen() {
       </View>
 
       <PrimaryButton
-        title="Submit review"
+        title={t('review.submit')}
         disabled={rating === 0}
         loading={busy}
         onPress={submit}

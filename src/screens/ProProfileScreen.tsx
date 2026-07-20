@@ -7,6 +7,7 @@ import { ProfilePhoto } from '../components/ProfilePhoto';
 import { Segmented } from '../components/Segmented';
 import { Card, Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
+import { LANGUAGES, useT } from '../i18n/i18n';
 import { assignSelfToSalon, fetchMyArtistRow, fetchMyLocations } from '../lib/api';
 import { useTheme } from '../theme/ThemeContext';
 import { Salon } from '../types';
@@ -19,6 +20,7 @@ import { Salon } from '../types';
 export function ProProfileScreen() {
   const { theme, isDark, setDark } = useTheme();
   const { profile, signOut, updateProfile } = useAuth();
+  const { t, lang, setLang } = useT();
   const router = useRouter();
 
   const [name, setName] = useState(profile?.full_name ?? '');
@@ -49,7 +51,7 @@ export function ProProfileScreen() {
     })();
   }, [isManager, profile]);
 
-  const assignedName = salons.find((s) => s.id === assignedId)?.name ?? 'No salon selected';
+  const assignedName = salons.find((s) => s.id === assignedId)?.name ?? t('profile.noSalon');
 
   async function assignTo(salonId: string) {
     setAssignedId(salonId);
@@ -61,7 +63,7 @@ export function ProProfileScreen() {
 
   return (
     <Screen clearTabBar>
-      <ScreenTitle title="My profile" subtitle="What customers see when they book you" />
+      <ScreenTitle title={t('profile.myProfile')} subtitle={t('profile.proSubtitle')} />
 
       <View style={{ alignItems: 'center' }}>
         <ProfilePhoto
@@ -69,26 +71,26 @@ export function ProProfileScreen() {
           userId={profile?.id ?? 'me'}
           shape="portrait"
           size={210}
-          caption="Discovery photo"
+          caption={t('profile.discoveryPhoto')}
           onChange={(avatar_url) => updateProfile({ avatar_url })}
         />
       </View>
 
       <View style={{ gap: 12, marginTop: 20 }}>
-        <Field label="Display name" value={name} onChangeText={setName} autoCapitalize="words" />
-        <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Field label={t('profile.displayName')} value={name} onChangeText={setName} autoCapitalize="words" />
+        <Field label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <Field
-          label="Reset password"
+          label={t('profile.resetPassword')}
           value={password}
           onChangeText={setPassword}
-          placeholder="New password"
+          placeholder={t('profile.newPassword')}
           secureTextEntry={!showPw}
           rightIcon={showPw ? 'eye-off' : 'eye'}
           onRightIconPress={() => setShowPw((v) => !v)}
         />
         {dirty ? (
           <PrimaryButton
-            title="Save changes"
+            title={t('common.saveChanges')}
             onPress={() => {
               updateProfile({ full_name: name, email });
               setPassword('');
@@ -116,7 +118,7 @@ export function ProProfileScreen() {
         })}
       >
         <Feather name="bar-chart-2" size={20} color="#ffffff" />
-        <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: '#ffffff' }}>Dashboard</Text>
+        <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: '#ffffff' }}>{t('profile.dashboard')}</Text>
         <Feather name="chevron-right" size={20} color="#ffffff" />
       </Pressable>
 
@@ -130,7 +132,7 @@ export function ProProfileScreen() {
             style={{ borderRadius: 18, paddingVertical: 18, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}
           >
             <Feather name="grid" size={20} color="#fff" />
-            <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: '#fff' }}>Salon Dashboard</Text>
+            <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: '#fff' }}>{t('profile.salonDashboard')}</Text>
             <Feather name="chevron-right" size={20} color="#fff" />
           </LinearGradient>
         </Pressable>
@@ -138,7 +140,7 @@ export function ProProfileScreen() {
 
       {isManager ? (
         <>
-          <SectionTitle>Assigned salon</SectionTitle>
+          <SectionTitle>{t('profile.assignedSalon')}</SectionTitle>
           <Card
             onPress={() => salons.length > 0 && setAssignOpen((v) => !v)}
             style={{ padding: 0, overflow: 'hidden' }}
@@ -162,7 +164,7 @@ export function ProProfileScreen() {
                     color: theme.textTertiary,
                   }}
                 >
-                  Assigned to
+                  {t('profile.assignedTo')}
                 </Text>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text, marginTop: 3 }}>
                   {assignedName}
@@ -193,20 +195,27 @@ export function ProProfileScreen() {
           </Card>
           {salons.length === 0 ? (
             <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 8 }}>
-              Add a location first to assign yourself to it.
+              {t('profile.addLocationFirst')}
             </Text>
           ) : null}
         </>
       ) : null}
 
-      <SectionTitle>Appearance</SectionTitle>
+      <SectionTitle>{t('profile.appearance')}</SectionTitle>
       <Segmented
         options={[
-          { value: 'light', label: '☀  Light' },
-          { value: 'dark', label: '☾  Dark' },
+          { value: 'light', label: t('profile.light') },
+          { value: 'dark', label: t('profile.dark') },
         ]}
         value={isDark ? 'dark' : 'light'}
         onChange={(v) => setDark(v === 'dark')}
+      />
+
+      <SectionTitle>{t('profile.language')}</SectionTitle>
+      <Segmented
+        options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+        value={lang}
+        onChange={setLang}
       />
 
       {/* Log out — red text + red border, bottom of the screen, both themes */}
@@ -230,7 +239,7 @@ export function ProProfileScreen() {
         })}
       >
         <Feather name="log-out" size={17} color={theme.destructive} />
-        <Text style={{ color: theme.destructive, fontSize: 16, fontWeight: '700' }}>Log out</Text>
+        <Text style={{ color: theme.destructive, fontSize: 16, fontWeight: '700' }}>{t('common.logout')}</Text>
       </Pressable>
     </Screen>
   );

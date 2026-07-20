@@ -4,9 +4,9 @@ import { makeFloatingTabBar } from '../../src/components/FloatingTabBar';
 
 const tabBar = makeFloatingTabBar(
   [
-    { name: 'home', label: 'Home', icon: 'home' },
-    { name: 'bookings', label: 'Bookings', icon: 'calendar' },
-    { name: 'profile', label: 'Profile', icon: 'user' },
+    { name: 'home', labelKey: 'tab.home', icon: 'home' },
+    { name: 'bookings', labelKey: 'tab.bookings', icon: 'calendar' },
+    { name: 'profile', labelKey: 'tab.profile', icon: 'user' },
   ],
   // immersive nested routes hide the tab bar
   ['artists', 'book', 'success']

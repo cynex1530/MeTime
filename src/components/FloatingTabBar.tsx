@@ -4,11 +4,13 @@ import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '../i18n/i18n';
 import { useTheme } from '../theme/ThemeContext';
 
 export type TabSpec = {
   name: string;
-  label: string;
+  /** i18n key resolved at render time (e.g. 'tab.home'). */
+  labelKey: string;
   icon: keyof typeof Feather.glyphMap;
 };
 
@@ -24,6 +26,7 @@ function FloatingTabBar({
   navigation,
 }: BottomTabBarProps & { tabs: TabSpec[]; hiddenRoutes: string[] }) {
   const { theme } = useTheme();
+  const { t } = useT();
   const insets = useSafeAreaInsets();
   // A tab can hold a nested stack (Home, Bookings). Hide the bar on immersive
   // screens by inspecting the deepest focused route, not just the tab name.
@@ -78,7 +81,7 @@ function FloatingTabBar({
                   color: focused ? theme.tabActive : theme.tabInactive,
                 }}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </Text>
             </Pressable>
           );

@@ -8,13 +8,12 @@ import { Segmented } from '../../src/components/Segmented';
 import { Sheet } from '../../src/components/Sheet';
 import { Card, Chip, Field, PrimaryButton, Screen, ScreenTitle } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useT } from '../../src/i18n/i18n';
 import { fetchMyLocations } from '../../src/lib/api';
 import { SUB_SERVICES } from '../../src/lib/sampleData';
 import { supabase } from '../../src/lib/supabase';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { Audience, Salon } from '../../src/types';
-
-const AUDIENCE_LABEL: Record<Audience, string> = { him: 'Him', her: 'Her', both: 'Anyone' };
 
 type LocForm = {
   name: string;
@@ -31,6 +30,8 @@ const emptyForm: LocForm = { name: '', area: '', desc: '', cat: 'both', subs: []
 export default function Locations() {
   const { theme } = useTheme();
   const { profile } = useAuth();
+  const { t } = useT();
+  const audienceLabel: Record<Audience, string> = { him: t('loc.him'), her: t('loc.her'), both: t('loc.anyone') };
   const [locs, setLocs] = useState<Salon[]>([]);
   const [editId, setEditId] = useState<string | null>(null); // null = closed, '' = new
   const [f, setF] = useState<LocForm>(emptyForm);
@@ -99,7 +100,7 @@ export default function Locations() {
 
   return (
     <Screen clearTabBar>
-      <ScreenTitle title="Locations" subtitle="Manage your salons" />
+      <ScreenTitle title={t('loc.title')} subtitle={t('loc.subtitle')} />
       <View style={{ gap: 14 }}>
         {locs.map((l) => (
           <Card key={l.id} onPress={() => openEdit(l)} style={{ padding: 12 }}>
@@ -115,7 +116,7 @@ export default function Locations() {
                 }}
               >
                 <Text style={{ fontSize: 12, fontWeight: '700', color: theme.textSecondary }}>
-                  {AUDIENCE_LABEL[l.audience]}
+                  {audienceLabel[l.audience]}
                 </Text>
               </View>
             </View>
@@ -161,55 +162,55 @@ export default function Locations() {
           }}
         >
           <Feather name="plus" size={18} color={theme.iconStroke} />
-          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>Add location</Text>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>{t('loc.add')}</Text>
         </Pressable>
       </View>
 
       {/* Add / edit location sheet */}
       <Sheet visible={editId !== null} onClose={() => setEditId(null)}>
         <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 14 }}>
-          {editId ? 'Edit location' : 'Add location'}
+          {editId ? t('loc.edit') : t('loc.add')}
         </Text>
         <View style={{ gap: 12 }}>
           <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary }}>
-            Store banner
+            {t('loc.banner')}
           </Text>
           <ProfilePhoto
             uri={f.cover}
             userId={profile?.id ?? 'me'}
             shape="banner"
-            caption="Add banner"
+            caption={t('photo.addBanner')}
             onChange={(cover) => setF((prev) => ({ ...prev, cover }))}
           />
-          <Field label="Name" value={f.name} onChangeText={(v) => setF({ ...f, name: v })} placeholder="Fade & Co." />
+          <Field label={t('loc.name')} value={f.name} onChangeText={(v) => setF({ ...f, name: v })} placeholder="Fade & Co." />
           <PlaceAutocompleteField
-            label="Address / area"
+            label={t('loc.address')}
             value={f.area}
-            placeholder="Start typing a city or street…"
+            placeholder={t('loc.addressPh')}
             onChangeText={(v) => setF((prev) => ({ ...prev, area: v }))}
             onSelect={(address, lat, lng) => setF((prev) => ({ ...prev, area: address, lat, lng }))}
           />
           <Field
-            label="Description"
+            label={t('loc.description')}
             value={f.desc}
             onChangeText={(v) => setF({ ...f, desc: v })}
-            placeholder="What makes this place special?"
+            placeholder={t('loc.descPh')}
             multiline
           />
           <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary, marginTop: 4 }}>
-            Audience
+            {t('loc.audience')}
           </Text>
           <Segmented<Audience>
             options={[
-              { value: 'him', label: 'Him' },
-              { value: 'her', label: 'Her' },
-              { value: 'both', label: 'Anyone' },
+              { value: 'him', label: t('loc.him') },
+              { value: 'her', label: t('loc.her') },
+              { value: 'both', label: t('loc.anyone') },
             ]}
             value={f.cat}
             onChange={(cat) => setF({ ...f, cat })}
           />
           <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', color: theme.textTertiary, marginTop: 4 }}>
-            Sub-services
+            {t('loc.subServices')}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {SUB_SERVICES.map((s) => (
@@ -223,7 +224,7 @@ export default function Locations() {
               />
             ))}
           </View>
-          <PrimaryButton title={editId ? 'Save location' : 'Add location'} disabled={!f.name.trim()} onPress={save} />
+          <PrimaryButton title={editId ? t('loc.save') : t('loc.add')} disabled={!f.name.trim()} onPress={save} />
         </View>
       </Sheet>
     </Screen>

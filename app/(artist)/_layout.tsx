@@ -3,9 +3,9 @@ import React from 'react';
 import { makeFloatingTabBar } from '../../src/components/FloatingTabBar';
 
 const tabBar = makeFloatingTabBar([
-  { name: 'schedule', label: 'Bookings', icon: 'calendar' },
-  { name: 'services', label: 'Services', icon: 'scissors' },
-  { name: 'profile', label: 'Profile', icon: 'user' },
+  { name: 'schedule', labelKey: 'tab.bookings', icon: 'calendar' },
+  { name: 'services', labelKey: 'tab.services', icon: 'scissors' },
+  { name: 'profile', labelKey: 'tab.profile', icon: 'user' },
 ]);
 
 export default function ArtistLayout() {

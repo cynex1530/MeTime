@@ -3,16 +3,18 @@ import { Link, useRouter } from 'expo-router';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { PrimaryButton, Screen } from '../../src/components/ui';
+import { useT } from '../../src/i18n/i18n';
 import { useTheme } from '../../src/theme/ThemeContext';
 
-const FEATURES: Array<{ icon: keyof typeof Feather.glyphMap; label: string }> = [
-  { icon: 'map-pin', label: 'Discover salons & artists near you' },
-  { icon: 'calendar', label: 'Book in seconds, keep it all in one place' },
-  { icon: 'star', label: 'Find the pros who make you feel your best' },
+const FEATURES: Array<{ icon: keyof typeof Feather.glyphMap; key: string }> = [
+  { icon: 'map-pin', key: 'welcome.f1' },
+  { icon: 'calendar', key: 'welcome.f2' },
+  { icon: 'star', key: 'welcome.f3' },
 ];
 
 export default function Welcome() {
   const { theme } = useTheme();
+  const { t } = useT();
   const router = useRouter();
 
   return (
@@ -26,7 +28,7 @@ export default function Welcome() {
           color: theme.textSecondary,
         }}
       >
-        Welcome to
+        {t('welcome.eyebrow')}
       </Text>
       <Text
         style={{
@@ -40,7 +42,7 @@ export default function Welcome() {
         Me Time
       </Text>
       <Text style={{ fontSize: 16, color: theme.textSecondary, marginTop: 8 }}>
-        Beauty & grooming appointments, booked your way.
+        {t('welcome.tagline')}
       </Text>
 
       <View style={{ gap: 14, marginTop: 36 }}>
@@ -60,13 +62,13 @@ export default function Welcome() {
             >
               <Feather name={f.icon} size={20} color={theme.iconStroke} />
             </View>
-            <Text style={{ flex: 1, fontSize: 15, fontWeight: '500', color: theme.text }}>{f.label}</Text>
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: '500', color: theme.text }}>{t(f.key)}</Text>
           </View>
         ))}
       </View>
 
       <PrimaryButton
-        title="Get started"
+        title={t('welcome.getStarted')}
         onPress={() => router.push('/(auth)/register')}
         style={{ marginTop: 40 }}
       />
@@ -79,7 +81,7 @@ export default function Welcome() {
             color: theme.textSecondary,
           }}
         >
-          Already have an account? <Text style={{ fontWeight: '700', color: theme.text }}>Sign in</Text>
+          {t('welcome.haveAccount')} <Text style={{ fontWeight: '700', color: theme.text }}>{t('welcome.signIn')}</Text>
         </Text>
       </Link>
     </Screen>

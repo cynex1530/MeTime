@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { RingProgress } from '../../src/components/RingProgress';
 import { Card, Screen } from '../../src/components/ui';
+import { useT } from '../../src/i18n/i18n';
 import { fetchArtistAllBookings, fetchArtistById, fetchArtistReviews } from '../../src/lib/api';
 import { ACCENT, ArtistDetail, buildArtistDetail, computeArtistDetail, SALON_DEMO } from '../../src/lib/salonStats';
 import { supabase } from '../../src/lib/supabase';
@@ -21,6 +22,7 @@ function hexToRgba(hex: string, a: number) {
 
 export default function SalonArtistDetail() {
   const { theme } = useTheme();
+  const { t } = useT();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [d, setD] = useState<ArtistDetail | null>(null);
@@ -46,13 +48,13 @@ export default function SalonArtistDetail() {
   const a = d.artist;
 
   const tiles = [
-    { v: `$${(a.revenue / 1000).toFixed(1)}k`, l: 'Revenue' },
-    { v: `${a.appts}`, l: 'Appointments' },
-    { v: `${d.customers}`, l: 'Customers' },
-    { v: `★ ${a.rating.toFixed(1)}`, l: 'Avg rating' },
-    { v: `${a.returnPct}%`, l: 'Returning' },
-    { v: `${a.occupancy}%`, l: 'Occupancy' },
-    { v: `+${a.growth}%`, l: 'Growth' },
+    { v: `$${(a.revenue / 1000).toFixed(1)}k`, l: t('ad.revenue') },
+    { v: `${a.appts}`, l: t('ad.appointments') },
+    { v: `${d.customers}`, l: t('ad.customers') },
+    { v: `★ ${a.rating.toFixed(1)}`, l: t('ad.avgRating') },
+    { v: `${a.returnPct}%`, l: t('ad.returning') },
+    { v: `${a.occupancy}%`, l: t('ad.occupancy') },
+    { v: `+${a.growth}%`, l: t('ad.growth') },
   ];
 
   const revMax = Math.max(...d.revenue6mo.map((x) => x.value));
@@ -109,16 +111,16 @@ export default function SalonArtistDetail() {
       <Card style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 18 }}>
         <RingProgress pct={d.score} color={GREEN} suffix="" />
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>PERFORMANCE SCORE</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>{t('ad.perfScore')}</Text>
           <Text style={{ fontSize: 15, color: theme.textSecondary, lineHeight: 21, marginTop: 6 }}>
-            Weighted from rating, occupancy and returning-customer rate.
+            {t('ad.perfDesc')}
           </Text>
         </View>
       </Card>
 
       {/* Revenue (6 mo) */}
       <Card style={{ marginTop: 16, gap: 12 }}>
-        <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>REVENUE (6 MO)</Text>
+        <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>{t('ad.revenue6mo')}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           {d.revenue6mo.map((m, i) => (
             <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 11, color: theme.textTertiary, fontWeight: '600' }}>
@@ -144,7 +146,7 @@ export default function SalonArtistDetail() {
 
       {/* Appointments (6 mo) */}
       <Card style={{ marginTop: 16, gap: 12 }}>
-        <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>APPOINTMENTS (6 MO)</Text>
+        <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>{t('ad.appts6mo')}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           {d.appts6mo.map((m, i) => (
             <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 12, color: theme.textTertiary, fontWeight: '600' }}>
@@ -170,12 +172,12 @@ export default function SalonArtistDetail() {
 
       {/* Popular services */}
       <Card style={{ marginTop: 16, gap: 16 }}>
-        <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>POPULAR SERVICES</Text>
+        <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>{t('ad.popularServices')}</Text>
         {d.popular.map((s) => (
           <View key={s.name} style={{ gap: 8 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>{s.name}</Text>
-              <Text style={{ fontSize: 14, color: theme.textSecondary }}>{s.booked} booked</Text>
+              <Text style={{ fontSize: 14, color: theme.textSecondary }}>{s.booked} {t('ad.booked')}</Text>
             </View>
             <View style={{ height: 8, borderRadius: 999, backgroundColor: theme.bg, overflow: 'hidden' }}>
               <View style={{ width: `${(s.booked / popMax) * 100}%`, height: '100%', backgroundColor: ACCENT, borderRadius: 999 }} />
@@ -187,7 +189,7 @@ export default function SalonArtistDetail() {
       {/* Booking heatmap */}
       <Card style={{ marginTop: 16, gap: 8 }}>
         <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary, marginBottom: 4 }}>
-          BOOKING HEATMAP
+          {t('ad.heatmap')}
         </Text>
         {d.heatmap.map((row, r) => (
           <View key={r} style={{ flexDirection: 'row', gap: 8 }}>
@@ -201,7 +203,7 @@ export default function SalonArtistDetail() {
       {/* Recent reviews */}
       <Card style={{ marginTop: 16, gap: 4 }}>
         <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary, marginBottom: 8 }}>
-          RECENT REVIEWS
+          {t('ad.recentReviews')}
         </Text>
         {d.reviews.map((rv, i) => (
           <View key={i} style={{ paddingVertical: 12, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: theme.hairline }}>

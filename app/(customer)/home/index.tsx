@@ -9,6 +9,7 @@ import { ImageSlot } from '../../../src/components/ImageSlot';
 import { Segmented } from '../../../src/components/Segmented';
 import { Card, GlassBadge, Screen, SectionTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
+import { useT } from '../../../src/i18n/i18n';
 import { fetchCategories, searchSalons } from '../../../src/lib/api';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Category, Salon } from '../../../src/types';
@@ -18,6 +19,7 @@ type AudienceTab = 'him' | 'her';
 export default function Home() {
   const { theme } = useTheme();
   const { profile, updateProfile } = useAuth();
+  const { t } = useT();
   const router = useRouter();
   const [audience, setAudience] = useState<AudienceTab>('him');
   const [cats, setCats] = useState<Category[]>([]);
@@ -71,13 +73,13 @@ export default function Home() {
       <Pressable onPress={() => setShowCity(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Feather name="map-pin" size={15} color={theme.iconMuted} />
         <Text style={{ fontSize: 14, fontWeight: '600', color: theme.textSecondary }}>
-          {profile?.city ?? 'Select a city'}
+          {profile?.city ?? t('home.selectCity')}
         </Text>
         <Feather name="chevron-down" size={14} color={theme.iconMuted} />
       </Pressable>
 
       <Text style={{ fontSize: 33, fontWeight: '800', letterSpacing: -0.9, color: theme.text, marginTop: 8 }}>
-        Find your me time
+        {t('home.title')}
       </Text>
 
       {/* Search salons & services + filter button (opens city picker) */}
@@ -100,7 +102,7 @@ export default function Home() {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search salons & services"
+            placeholder={t('home.search')}
             placeholderTextColor={theme.textFaint}
             returnKeyType="search"
             style={{ flex: 1, fontSize: 16, color: theme.text, padding: 0 }}
@@ -156,6 +158,7 @@ function CategoryGrid({
   setAudience: (v: AudienceTab) => void;
 }) {
   const { theme } = useTheme();
+  const { t } = useT();
   const router = useRouter();
   return (
     <>
@@ -163,15 +166,15 @@ function CategoryGrid({
       <View style={{ marginTop: 16 }}>
         <Segmented<AudienceTab>
           options={[
-            { value: 'him', label: 'For him' },
-            { value: 'her', label: 'For her' },
+            { value: 'him', label: t('home.forHim') },
+            { value: 'her', label: t('home.forHer') },
           ]}
           value={audience}
           onChange={setAudience}
         />
       </View>
 
-      <SectionTitle>Categories</SectionTitle>
+      <SectionTitle>{t('home.categories')}</SectionTitle>
       {/* 2-column grid of square tiles */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
         {cats.map((c) => (
@@ -190,7 +193,7 @@ function CategoryGrid({
               />
               {/* ANYONE badge for categories open to everyone */}
               {c.audience === 'both' ? (
-                <GlassBadge style={{ position: 'absolute', top: 10, right: 10 }}>ANYONE</GlassBadge>
+                <GlassBadge style={{ position: 'absolute', top: 10, right: 10 }}>{t('home.anyone')}</GlassBadge>
               ) : null}
               {/* Name + nearby count overlaid at the bottom */}
               <View style={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
@@ -215,7 +218,7 @@ function CategoryGrid({
                     marginTop: 1,
                   }}
                 >
-                  {c.count ?? 0} nearby
+                  {c.count ?? 0} {t('home.nearby')}
                 </Text>
               </View>
             </View>
@@ -228,6 +231,7 @@ function CategoryGrid({
 
 function SearchResults({ results, query }: { results: Salon[]; query: string }) {
   const { theme } = useTheme();
+  const { t } = useT();
   const router = useRouter();
   return (
     <View style={{ marginTop: 20, gap: 14 }}>
@@ -260,7 +264,7 @@ function SearchResults({ results, query }: { results: Salon[]; query: string }) 
       ))}
       {results.length === 0 ? (
         <Text style={{ color: theme.textSecondary, textAlign: 'center', marginTop: 40 }}>
-          No salons or services match “{query}”.
+          {t('home.noResults', { q: query })}
         </Text>
       ) : null}
     </View>
