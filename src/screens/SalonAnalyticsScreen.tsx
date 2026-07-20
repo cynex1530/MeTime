@@ -1,9 +1,13 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Sheet } from '../components/Sheet';
 import { BackButton, Card, Screen } from '../components/ui';
+import { useAuth } from '../hooks/useAuth';
+import { fetchMyLocations } from '../lib/api';
 import { ACCENT, ArtistPerf, leaderboards, SALON_DEMO } from '../lib/salonStats';
+import { Salon } from '../types';
 import { useTheme } from '../theme/ThemeContext';
 
 const GREEN = '#1f8a4c';
@@ -49,26 +53,63 @@ function Label({ children }: { children: React.ReactNode }) {
   return <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.textTertiary }}>{children}</Text>;
 }
 
-function FilterPill({ label, value }: { label: string; value: string }) {
+function FilterDropdown({
+  label,
+  value,
+  options,
+  onSelect,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onSelect: (v: string) => void;
+}) {
   const { theme } = useTheme();
+  const [open, setOpen] = useState(false);
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: theme.card,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: theme.cardBorder,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-      }}
-    >
-      <Text style={{ fontSize: 13, color: theme.textSecondary }}>{label}</Text>
-      <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>{value}</Text>
-      <Feather name="chevron-down" size={14} color={theme.iconMuted} />
-    </View>
+    <>
+      <Pressable
+        onPress={() => setOpen(true)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          backgroundColor: theme.card,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: theme.cardBorder,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+        }}
+      >
+        <Text style={{ fontSize: 13, color: theme.textSecondary }}>{label}</Text>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>{value}</Text>
+        <Feather name="chevron-down" size={14} color={theme.iconMuted} />
+      </Pressable>
+      <Sheet visible={open} onClose={() => setOpen(false)}>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginBottom: 10 }}>{label}</Text>
+        {options.map((o, i) => (
+          <Pressable
+            key={o}
+            onPress={() => {
+              onSelect(o);
+              setOpen(false);
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: 14,
+              borderTopWidth: i === 0 ? 0 : 1,
+              borderTopColor: theme.hairline,
+            }}
+          >
+            <Text style={{ fontSize: 16, color: theme.text }}>{o}</Text>
+            {value === o ? <Feather name="check" size={18} color={theme.iconStroke} /> : null}
+          </Pressable>
+        ))}
+      </Sheet>
+    </>
   );
 }
 
@@ -95,19 +136,46 @@ function Badge({ kind }: { kind: ArtistPerf['badge'] }) {
 
 export function SalonAnalyticsScreen() {
   const { theme } = useTheme();
+  const { profile } = useAuth();
   const router = useRouter();
   const stats = SALON_DEMO;
 
   const [metric, setMetric] = useState<'revenue' | 'appts'>('revenue');
-  const [range, setRange] = useState('30');
   const [query, setQuery] = useState('');
+
+  // Owner's salons + selected one (selector appears when there's more than one)
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [salonId, setSalonId] = useState<string | null>(null);
+
+  // Working filters
+  const [dateRange, setDateRange] = useState('Last 30 days');
+  const [artistFilter, setArtistFilter] = useState('All');
+  const [serviceFilter, setServiceFilter] = useState('All');
+
+  useEffect(() => {
+    if (profile)
+      fetchMyLocations(profile.id).then((locs) => {
+        setSalons(locs);
+        setSalonId((prev) => prev ?? locs[0]?.id ?? null);
+      });
+  }, [profile]);
+
+  const selectedSalonName = salons.find((s) => s.id === salonId)?.name ?? stats.salonName;
 
   const bars = stats.overview[metric];
   const barMax = useMemo(() => Math.max(...bars.map((b) => b.value)), [bars]);
   const leaders = useMemo(() => leaderboards(stats.artists), [stats.artists]);
-  const filteredArtists = stats.artists.filter(
-    (a) => a.name.toLowerCase().includes(query.toLowerCase()) || a.profession.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredArtists = stats.artists.filter((a) => {
+    const matchesQuery =
+      a.name.toLowerCase().includes(query.toLowerCase()) || a.profession.toLowerCase().includes(query.toLowerCase());
+    const matchesFilter = artistFilter === 'All' || a.name === artistFilter;
+    return matchesQuery && matchesFilter;
+  });
+  const filteredServices =
+    serviceFilter === 'All' ? stats.services.list : stats.services.list.filter((s) => s.name === serviceFilter);
+
+  const artistOptions = ['All', ...stats.artists.map((a) => a.name)];
+  const serviceOptions = ['All', ...stats.services.list.map((s) => s.name)];
 
   return (
     <Screen clearTabBar>
@@ -116,15 +184,32 @@ export function SalonAnalyticsScreen() {
         <BackButton />
         <View>
           <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>Salon Analytics</Text>
-          <Text style={{ fontSize: 14, color: theme.textSecondary }}>{stats.salonName} · full performance</Text>
+          <Text style={{ fontSize: 14, color: theme.textSecondary }}>{selectedSalonName} · full performance</Text>
         </View>
       </View>
 
-      {/* Filters (export/print removed) */}
+      {/* Salon selector — shown only when the owner has more than one salon */}
+      {salons.length > 1 ? (
+        <View style={{ marginBottom: 12 }}>
+          <FilterDropdown
+            label="Salon"
+            value={selectedSalonName}
+            options={salons.map((s) => s.name)}
+            onSelect={(name) => setSalonId(salons.find((s) => s.name === name)?.id ?? null)}
+          />
+        </View>
+      ) : null}
+
+      {/* Filters (working dropdowns; export/print removed) */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }} style={{ marginBottom: 18 }}>
-        <FilterPill label="Date range" value="Last 30 days" />
-        <FilterPill label="Artist" value="All" />
-        <FilterPill label="Service" value="All" />
+        <FilterDropdown
+          label="Date range"
+          value={dateRange}
+          options={['Today', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'This year']}
+          onSelect={setDateRange}
+        />
+        <FilterDropdown label="Artist" value={artistFilter} options={artistOptions} onSelect={setArtistFilter} />
+        <FilterDropdown label="Service" value={serviceFilter} options={serviceOptions} onSelect={setServiceFilter} />
       </ScrollView>
 
       {/* KPI grid */}
@@ -153,7 +238,7 @@ export function SalonAnalyticsScreen() {
             <Text style={{ fontSize: 30, fontWeight: '800', color: theme.text, marginTop: 4 }}>
               {metric === 'revenue' ? stats.overview.revenueTotal : stats.overview.apptsTotal}
             </Text>
-            <Text style={{ fontSize: 13, color: theme.textSecondary }}>Last {range} days</Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary }}>{dateRange}</Text>
           </View>
           <View style={{ gap: 8 }}>
             {(['revenue', 'appts'] as const).map((m) => (
@@ -198,20 +283,20 @@ export function SalonAnalyticsScreen() {
           ))}
         </View>
 
-        {/* range toggle */}
+        {/* range toggle — shares state with the top Date range filter */}
         <View style={{ flexDirection: 'row', backgroundColor: theme.bg, borderRadius: 999, padding: 4 }}>
           {[
-            { k: '7', l: '7 Days' },
-            { k: '30', l: '30 Days' },
-            { k: '90', l: '3 Months' },
-            { k: '365', l: '12 Months' },
+            { k: 'Last 7 days', l: '7 Days' },
+            { k: 'Last 30 days', l: '30 Days' },
+            { k: 'Last 90 days', l: '3 Months' },
+            { k: 'This year', l: '12 Months' },
           ].map((r) => (
             <Pressable
               key={r.k}
-              onPress={() => setRange(r.k)}
-              style={{ flex: 1, paddingVertical: 9, borderRadius: 999, alignItems: 'center', backgroundColor: range === r.k ? theme.inkSurface : 'transparent' }}
+              onPress={() => setDateRange(r.k)}
+              style={{ flex: 1, paddingVertical: 9, borderRadius: 999, alignItems: 'center', backgroundColor: dateRange === r.k ? theme.inkSurface : 'transparent' }}
             >
-              <Text style={{ fontSize: 13, fontWeight: '700', color: range === r.k ? theme.onInk : theme.textSecondary }}>{r.l}</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: dateRange === r.k ? theme.onInk : theme.textSecondary }}>{r.l}</Text>
             </Pressable>
           ))}
         </View>
@@ -330,7 +415,7 @@ export function SalonAnalyticsScreen() {
         ))}
       </View>
       <Card style={{ marginTop: 14, gap: 18 }}>
-        {stats.services.list.map((s) => {
+        {filteredServices.map((s) => {
           const max = Math.max(...stats.services.list.map((x) => x.revenue));
           return (
             <View key={s.name} style={{ gap: 8 }}>
