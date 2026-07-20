@@ -10,6 +10,9 @@
 
 export const ARTIST_COLORS = ['#6C5CE7', '#2FBFA6', '#E8A94B', '#E85B9B', '#4C86E8', '#E86C6C'];
 
+// Single accent used for every artist logo / detail chart (uniform, not per-artist)
+export const ACCENT = '#6C5CE7';
+
 export type Kpi = {
   key: string;
   label: string;
@@ -77,7 +80,6 @@ export const SALON_DEMO: SalonStats = {
     { key: 'returning', label: 'Returning', value: '68%', delta: 5, good: true, icon: 'refresh-cw', tint: 'rgba(48,164,108,0.14)', fg: '#1f8a4c' },
     { key: 'occupancy', label: 'Occupancy', value: '80%', delta: 6, good: true, icon: 'activity', tint: 'rgba(108,92,231,0.14)', fg: '#6C5CE7' },
     { key: 'rating', label: 'Avg rating', value: '4.8', delta: 2, good: true, icon: 'star', tint: 'rgba(232,169,75,0.18)', fg: '#E8A94B' },
-    { key: 'noshow', label: 'No-show rate', value: '4.6%', delta: -12, good: true, icon: 'x', tint: 'rgba(232,91,155,0.14)', fg: '#E85B9B' },
     { key: 'cancel', label: 'Cancellation', value: '5.2%', delta: -7, good: true, icon: 'slash', tint: 'rgba(229,72,77,0.12)', fg: '#e5484d' },
   ],
   overview: {

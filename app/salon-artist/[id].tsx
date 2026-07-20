@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { RingProgress } from '../../src/components/RingProgress';
 import { Card, Screen } from '../../src/components/ui';
-import { buildArtistDetail, SALON_DEMO } from '../../src/lib/salonStats';
+import { ACCENT, buildArtistDetail, SALON_DEMO } from '../../src/lib/salonStats';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 const GREEN = '#42B883';
@@ -31,7 +31,6 @@ export default function SalonArtistDetail() {
     { v: `★ ${a.rating.toFixed(1)}`, l: 'Avg rating' },
     { v: `${a.returnPct}%`, l: 'Returning' },
     { v: `${a.occupancy}%`, l: 'Occupancy' },
-    { v: `${a.noShow}%`, l: 'No-show' },
     { v: `+${a.growth}%`, l: 'Growth' },
   ];
 
@@ -63,7 +62,7 @@ export default function SalonArtistDetail() {
 
       {/* Identity */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-        <View style={{ width: 88, height: 88, borderRadius: 24, backgroundColor: a.color, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 88, height: 88, borderRadius: 24, backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ color: '#fff', fontSize: 30, fontWeight: '800' }}>{a.initials}</Text>
         </View>
         <View>
@@ -109,7 +108,7 @@ export default function SalonArtistDetail() {
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 110, gap: 8 }}>
           {d.revenue6mo.map((m, i) => (
             <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-              <View style={{ width: '100%', height: Math.max(12, (m.value / revMax) * 96), backgroundColor: a.color, borderRadius: 10 }} />
+              <View style={{ width: '100%', height: Math.max(12, (m.value / revMax) * 96), backgroundColor: ACCENT, borderRadius: 10 }} />
             </View>
           ))}
         </View>
@@ -158,7 +157,7 @@ export default function SalonArtistDetail() {
               <Text style={{ fontSize: 14, color: theme.textSecondary }}>{s.booked} booked</Text>
             </View>
             <View style={{ height: 8, borderRadius: 999, backgroundColor: theme.bg, overflow: 'hidden' }}>
-              <View style={{ width: `${(s.booked / popMax) * 100}%`, height: '100%', backgroundColor: a.color, borderRadius: 999 }} />
+              <View style={{ width: `${(s.booked / popMax) * 100}%`, height: '100%', backgroundColor: ACCENT, borderRadius: 999 }} />
             </View>
           </View>
         ))}
@@ -172,7 +171,7 @@ export default function SalonArtistDetail() {
         {d.heatmap.map((row, r) => (
           <View key={r} style={{ flexDirection: 'row', gap: 8 }}>
             {row.map((c, i) => (
-              <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 8, backgroundColor: hexToRgba(a.color, Math.max(0.12, c)) }} />
+              <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 8, backgroundColor: hexToRgba(ACCENT, Math.max(0.12, c)) }} />
             ))}
           </View>
         ))}

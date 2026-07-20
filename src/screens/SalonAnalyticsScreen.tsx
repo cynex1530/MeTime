@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { BackButton, Card, Screen } from '../components/ui';
-import { ArtistPerf, leaderboards, SALON_DEMO } from '../lib/salonStats';
+import { ACCENT, ArtistPerf, leaderboards, SALON_DEMO } from '../lib/salonStats';
 import { useTheme } from '../theme/ThemeContext';
 
 const GREEN = '#1f8a4c';
@@ -248,7 +248,7 @@ export function SalonAnalyticsScreen() {
         {filteredArtists.map((a) => (
           <Card key={a.id} style={{ gap: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Avatar initials={a.initials} color={a.color} />
+              <Avatar initials={a.initials} color={ACCENT} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 17, fontWeight: '800', color: theme.text }}>{a.name}</Text>
                 <Text style={{ fontSize: 14, color: theme.textSecondary }}>{a.profession}</Text>
@@ -271,9 +271,6 @@ export function SalonAnalyticsScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.hairline }}>
               <Text style={{ fontSize: 13, color: theme.textSecondary }}>
                 Return <Text style={{ fontWeight: '700', color: theme.text }}>{a.returnPct}%</Text>
-              </Text>
-              <Text style={{ fontSize: 13, color: theme.textSecondary, marginLeft: 14 }}>
-                No-show <Text style={{ fontWeight: '700', color: theme.text }}>{a.noShow}%</Text>
               </Text>
               <View style={{ marginLeft: 14 }}>
                 <Delta delta={a.growth} good={a.growth >= 0} />
@@ -304,7 +301,7 @@ export function SalonAnalyticsScreen() {
               </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Avatar initials={l.artist.initials} color={l.artist.color} size={40} />
+              <Avatar initials={l.artist.initials} color={ACCENT} size={40} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, fontWeight: '800', color: theme.text }} numberOfLines={1}>
                   {l.artist.name}
@@ -365,7 +362,7 @@ export function SalonAnalyticsScreen() {
         {stats.occupancy.map((row) => (
           <View key={row.name} style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ width: 92, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Avatar initials={row.initials} color={row.color} size={28} />
+              <Avatar initials={row.initials} color={ACCENT} size={28} />
               <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>{row.name}</Text>
             </View>
             {row.cells.map((c, i) => (
@@ -469,21 +466,16 @@ export function SalonAnalyticsScreen() {
       </Card>
 
       {/* CANCELLATIONS & NO-SHOWS */}
-      <H2>Cancellations & no-shows</H2>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
-        {[
-          { l: 'Cancellation rate', v: stats.cancellations.cancelRate.value, d: stats.cancellations.cancelRate.delta },
-          { l: 'No-show rate', v: stats.cancellations.noShowRate.value, d: stats.cancellations.noShowRate.delta },
-        ].map((t) => (
-          <Card key={t.l} style={{ width: '47%' }}>
-            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{t.l}</Text>
-            <Text style={{ fontSize: 26, fontWeight: '800', color: theme.text, marginTop: 6 }}>{t.v}</Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: GREEN, marginTop: 6 }}>
-              ▼ {t.d}% vs last month
-            </Text>
-          </Card>
-        ))}
-      </View>
+      <H2>Cancellations</H2>
+      <Card>
+        <Text style={{ fontSize: 14, color: theme.textSecondary }}>Cancellation rate</Text>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: theme.text, marginTop: 6 }}>
+          {stats.cancellations.cancelRate.value}
+        </Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: GREEN, marginTop: 6 }}>
+          ▼ {stats.cancellations.cancelRate.delta}% vs last month
+        </Text>
+      </Card>
       <Card style={{ marginTop: 14, gap: 12 }}>
         <Label>CANCELLATIONS BY ARTIST</Label>
         {stats.cancellations.byArtist.map((a) => {
