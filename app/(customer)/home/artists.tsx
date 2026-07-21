@@ -1,10 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, Text, View } from 'react-native';
 import { ImageSlot } from '../../../src/components/ImageSlot';
+import { Skeleton } from '../../../src/components/Skeleton';
 import { BackButton, PrimaryButton, Screen } from '../../../src/components/ui';
+import { useAuth } from '../../../src/hooks/useAuth';
 import { useT } from '../../../src/i18n/i18n';
-import { fetchSalonArtists } from '../../../src/lib/api';
+import { addFavorite, fetchFavorites, fetchSalonArtists, removeFavorite } from '../../../src/lib/api';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Artist } from '../../../src/types';
 
@@ -21,6 +24,7 @@ const SIDE_PAD = (SCREEN_W - CARD_W) / 2;
  */
 export default function ArtistSelect() {
   const { theme } = useTheme();
+  const { profile } = useAuth();
   const { t } = useT();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -31,13 +35,44 @@ export default function ArtistSelect() {
   }>();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [index, setIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [favIds, setFavIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!salonId) return;
-    fetchSalonArtists(salonId).then(setArtists);
+    setLoading(true);
+    fetchSalonArtists(salonId)
+      .then(setArtists)
+      .finally(() => setLoading(false));
   }, [salonId]);
 
+  useEffect(() => {
+    if (profile) fetchFavorites(profile.id).then((favs) => setFavIds(new Set(favs.map((f) => f.id))));
+  }, [profile]);
+
   const selected = artists[index];
+  const selectedFav = selected ? favIds.has(selected.id) : false;
+
+  async function toggleFavorite() {
+    if (!selected || !profile) return;
+    const next = new Set(favIds);
+    if (selectedFav) {
+      next.delete(selected.id);
+      setFavIds(next);
+      await removeFavorite(profile.id, selected.id);
+    } else {
+      next.add(selected.id);
+      setFavIds(next);
+      await addFavorite(profile.id, {
+        id: selected.id,
+        display_name: selected.display_name,
+        title: selected.title ?? null,
+        photo_url: selected.photo_url ?? null,
+        salon_id: salonId ?? selected.salon_id ?? null,
+        salon_name: salonName ?? null,
+      });
+    }
+  }
 
   // Auto-select the centered artist as the user swipes — no tap required.
   function onScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
@@ -68,6 +103,12 @@ export default function ArtistSelect() {
 
       {/* Carousel */}
       <View style={{ flex: 1, justifyContent: 'center' }}>
+        {loading ? (
+          <View style={{ alignItems: 'center' }}>
+            <Skeleton style={{ width: CARD_W, height: CARD_W * (4 / 3), borderRadius: 24 }} />
+            <Skeleton style={{ width: 160, height: 22, borderRadius: 11, marginTop: 28 }} />
+          </View>
+        ) : (
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -99,13 +140,25 @@ export default function ArtistSelect() {
             );
           })}
         </ScrollView>
+        )}
 
-        {/* Selected name (rating & experience intentionally omitted here) */}
-        <View style={{ alignItems: 'center', marginTop: 20 }}>
-          <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: -0.4, color: theme.text }}>
-            {selected?.display_name ?? ''}
-          </Text>
-        </View>
+        {/* Selected name + favorite heart */}
+        {!loading ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 20 }}>
+            <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: -0.4, color: theme.text }}>
+              {selected?.display_name ?? ''}
+            </Text>
+            {selected ? (
+              <Pressable onPress={toggleFavorite} hitSlop={10}>
+                <Ionicons
+                  name={selectedFav ? 'heart' : 'heart-outline'}
+                  size={24}
+                  color={selectedFav ? '#E5484D' : theme.iconMuted}
+                />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       {/* Swipe hint + Book CTA */}

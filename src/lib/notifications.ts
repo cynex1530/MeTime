@@ -1,10 +1,13 @@
 /**
- * Local notifications — currently just the "leave a review" reminder that fires
- * when a customer finishes an appointment. Uses Expo's local scheduler (works
- * in Expo Go); no remote push server is involved.
+ * Local notifications: the "leave a review" reminder (fired when a customer
+ * finishes an appointment) and the "upcoming appointment" reminder (3 hours
+ * before a booking). Uses Expo's local scheduler (works in Expo Go); no remote
+ * push server is involved.
  */
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+
+const CHANNEL_ID = 'default';
 
 // Show the banner even when the app is in the foreground.
 Notifications.setNotificationHandler({
@@ -27,8 +30,8 @@ export async function ensureNotificationPermission(): Promise<boolean> {
     granted = req.granted || req.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
   }
   if (granted && Platform.OS === 'android' && !androidChannelReady) {
-    await Notifications.setNotificationChannelAsync('reviews', {
-      name: 'Review reminders',
+    await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+      name: 'Me Time',
       importance: Notifications.AndroidImportance.DEFAULT,
     });
     androidChannelReady = true;
@@ -59,9 +62,36 @@ export async function scheduleReviewReminder(body: string, data: ReviewReminderD
       title: 'Me Time',
       body,
       data,
-      ...(Platform.OS === 'android' ? { channelId: 'reviews' } : null),
+      ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : null),
     },
     // fire almost immediately, as a real banner rather than an in-place alert
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 2 },
+  });
+}
+
+/**
+ * Schedule an "upcoming appointment" reminder 3 hours before the booking starts.
+ * `body` is passed in already-translated. Returns the scheduled notification id
+ * (so it can be cancelled if the booking is cancelled), or null if not scheduled
+ * (permission denied, or the appointment is under 3 hours away).
+ */
+export async function scheduleBookingReminder(
+  body: string,
+  startsAtISO: string,
+  bookingId: string
+): Promise<string | null> {
+  const granted = await ensureNotificationPermission();
+  if (!granted) return null;
+  const fireAt = new Date(new Date(startsAtISO).getTime() - 3 * 60 * 60 * 1000);
+  // Only schedule if the reminder time is still in the future.
+  if (fireAt.getTime() <= Date.now() + 5000) return null;
+  return Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Me Time',
+      body,
+      data: { kind: 'booking-reminder', id: bookingId },
+      ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : null),
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireAt },
   });
 }

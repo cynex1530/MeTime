@@ -5,6 +5,7 @@ import { makeFloatingTabBar } from '../../src/components/FloatingTabBar';
 const tabBar = makeFloatingTabBar(
   [
     { name: 'home', labelKey: 'tab.home', icon: 'home' },
+    { name: 'favorites', labelKey: 'tab.favorites', icon: 'heart' },
     { name: 'bookings', labelKey: 'tab.bookings', icon: 'calendar' },
     { name: 'profile', labelKey: 'tab.profile', icon: 'user' },
   ],
@@ -16,6 +17,7 @@ export default function CustomerLayout() {
   return (
     <Tabs tabBar={tabBar} screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="home" />
+      <Tabs.Screen name="favorites" />
       <Tabs.Screen name="bookings" />
       <Tabs.Screen name="profile" />
     </Tabs>

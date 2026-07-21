@@ -260,13 +260,134 @@ export async function fetchArtistReviews(artistId: string | null): Promise<Artis
   return [];
 }
 
-export async function createBooking(booking: Omit<Booking, 'id' | 'status'>): Promise<Booking> {
+// ---------------------------------------------------------------------------
+// Favorites — a customer's saved artists (Favorites tab / quick re-booking)
+// ---------------------------------------------------------------------------
+
+export type FavoriteArtist = {
+  id: string; // artist id
+  display_name: string;
+  title: string | null;
+  photo_url: string | null;
+  salon_id: string | null;
+  salon_name: string | null;
+};
+
+const favKey = (customerId: string) => `mtFavorites:${customerId}`;
+
+async function loadLocalFavorites(customerId: string): Promise<FavoriteArtist[]> {
+  try {
+    const raw = await AsyncStorage.getItem(favKey(customerId));
+    return raw ? (JSON.parse(raw) as FavoriteArtist[]) : [];
+  } catch {
+    return [];
+  }
+}
+async function saveLocalFavorites(customerId: string, list: FavoriteArtist[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(favKey(customerId), JSON.stringify(list));
+  } catch {
+    // ignore
+  }
+}
+
+/** A customer's favorited artists (most recently added first). */
+export async function fetchFavorites(customerId: string): Promise<FavoriteArtist[]> {
+  if (!customerId) return [];
+  if (supabase) {
+    const { data } = await supabase
+      .from('favorites')
+      .select('artist_id, artists(id, display_name, title, photo_url, salon_id, salons(name))')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false });
+    if (data) {
+      return data
+        .map((row: any) => row.artists)
+        .filter(Boolean)
+        .map((a: any) => ({
+          id: a.id,
+          display_name: a.display_name,
+          title: a.title ?? null,
+          photo_url: a.photo_url ?? null,
+          salon_id: a.salon_id ?? null,
+          salon_name: a.salons?.name ?? null,
+        }));
+    }
+  }
+  return loadLocalFavorites(customerId);
+}
+
+export async function isFavorite(customerId: string, artistId: string): Promise<boolean> {
+  if (!customerId || !artistId) return false;
+  if (supabase) {
+    const { data } = await supabase
+      .from('favorites')
+      .select('artist_id')
+      .eq('customer_id', customerId)
+      .eq('artist_id', artistId)
+      .limit(1);
+    return !!(data && data.length);
+  }
+  const list = await loadLocalFavorites(customerId);
+  return list.some((f) => f.id === artistId);
+}
+
+export async function addFavorite(customerId: string, artist: FavoriteArtist): Promise<void> {
+  if (!customerId || !artist.id) return;
+  if (supabase && /^[0-9a-f-]{36}$/i.test(artist.id)) {
+    await supabase.from('favorites').upsert({ customer_id: customerId, artist_id: artist.id });
+    return;
+  }
+  const list = await loadLocalFavorites(customerId);
+  if (!list.some((f) => f.id === artist.id)) await saveLocalFavorites(customerId, [artist, ...list]);
+}
+
+export async function removeFavorite(customerId: string, artistId: string): Promise<void> {
+  if (!customerId || !artistId) return;
+  if (supabase) {
+    await supabase.from('favorites').delete().eq('customer_id', customerId).eq('artist_id', artistId);
+  }
+  const list = await loadLocalFavorites(customerId);
+  await saveLocalFavorites(customerId, list.filter((f) => f.id !== artistId));
+}
+
+/** Confirmed bookings for an artist within a day, to grey out taken slots. */
+export async function fetchArtistDayBookings(
+  artistId: string,
+  dayStartISO: string,
+  dayEndISO: string
+): Promise<{ starts_at: string; ends_at: string }[]> {
+  if (supabase && artistId) {
+    const { data } = await supabase
+      .from('bookings')
+      .select('starts_at, ends_at')
+      .eq('artist_id', artistId)
+      .eq('status', 'confirmed')
+      .gte('starts_at', dayStartISO)
+      .lt('starts_at', dayEndISO);
+    if (data) return data as { starts_at: string; ends_at: string }[];
+  }
+  return [];
+}
+
+export type CreateBookingResult = { booking: Booking | null; conflict: boolean };
+
+/**
+ * Create a booking. The database has an exclusion constraint that rejects two
+ * confirmed overlapping slots for the same artist, so a race returns
+ * `conflict: true` (Postgres error 23P01) instead of a booking.
+ */
+export async function createBooking(booking: Omit<Booking, 'id' | 'status'>): Promise<CreateBookingResult> {
   if (supabase) {
     const { salon_name, artist_name, salon_area, ...row } = booking;
     const { data, error } = await supabase.from('bookings').insert(row).select().single();
-    if (!error && data) return { ...booking, ...data };
+    if (error) {
+      // 23P01 = exclusion_violation (the no-double-booking constraint)
+      return { booking: null, conflict: error.code === '23P01' };
+    }
+    if (data) return { booking: { ...booking, ...data }, conflict: false };
   }
-  return { ...booking, id: `local-${Date.now()}`, status: 'confirmed' };
+  return { booking: { ...booking, id: `local-${Date.now()}`, status: 'confirmed' }, conflict: false };
 }
 
 export async function cancelBooking(id: string): Promise<void> {

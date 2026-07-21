@@ -1,11 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { BackButton, Card, PrimaryButton, Screen, SectionTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useT } from '../../../src/i18n/i18n';
-import { createBooking, fetchArtistById, fetchArtistServices } from '../../../src/lib/api';
+import { createBooking, fetchArtistById, fetchArtistDayBookings, fetchArtistServices } from '../../../src/lib/api';
 import { formatDuration, formatPrice, WEEKDAYS } from '../../../src/lib/format';
+import { scheduleBookingReminder } from '../../../src/lib/notifications';
 import { generateDaySlots } from '../../../src/lib/schedule';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Artist, Service } from '../../../src/types';
@@ -43,6 +44,8 @@ export default function Book() {
   const [selDay, setSelDay] = useState<Date | null>(null);
   const [selTime, setSelTime] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // The artist's already-booked slots for the selected day (to grey them out).
+  const [dayBookings, setDayBookings] = useState<{ starts_at: string; ends_at: string }[]>([]);
 
   useEffect(() => {
     if (artistId) {
@@ -50,6 +53,18 @@ export default function Book() {
       fetchArtistById(artistId).then(setArtist);
     }
   }, [artistId, catId]);
+
+  // Load the artist's booked slots whenever the chosen day changes.
+  useEffect(() => {
+    if (!artistId || !selDay) {
+      setDayBookings([]);
+      return;
+    }
+    const dayStart = new Date(selDay);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart.getTime() + 86400000);
+    fetchArtistDayBookings(artistId, dayStart.toISOString(), dayEnd.toISOString()).then(setDayBookings);
+  }, [artistId, selDay]);
 
   const days = useMemo(() => nextDays(8), []);
   // Slots come from the artist's open/close hours, slot length and lunch break.
@@ -78,6 +93,29 @@ export default function Book() {
     setSelTime(null);
   }
 
+  // A slot is taken when the appointment it would create overlaps an existing
+  // confirmed booking for this artist on the selected day.
+  function slotTaken(time: string): boolean {
+    if (!selDay || !service) return false;
+    const [h, m] = time.split(':').map(Number);
+    const s = new Date(selDay);
+    s.setHours(h, m, 0, 0);
+    const e = s.getTime() + service.duration_minutes * 60000;
+    return dayBookings.some((b) => {
+      const bs = new Date(b.starts_at).getTime();
+      const be = new Date(b.ends_at).getTime();
+      return s.getTime() < be && e > bs;
+    });
+  }
+
+  async function refreshDayBookings() {
+    if (!artistId || !selDay) return;
+    const dayStart = new Date(selDay);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart.getTime() + 86400000);
+    setDayBookings(await fetchArtistDayBookings(artistId, dayStart.toISOString(), dayEnd.toISOString()));
+  }
+
   async function confirm() {
     if (!service || !selDay || !selTime) return;
     setBusy(true);
@@ -85,7 +123,7 @@ export default function Book() {
     const start = new Date(selDay);
     start.setHours(h, m, 0, 0);
     const end = new Date(start.getTime() + service.duration_minutes * 60000);
-    const booking = await createBooking({
+    const { booking, conflict } = await createBooking({
       customer_id: profile?.id ?? null,
       salon_id: salonId ?? null,
       artist_id: artistId ?? null,
@@ -101,6 +139,18 @@ export default function Book() {
       artist_name: artistName,
     });
     setBusy(false);
+
+    // The slot was taken between load and confirm (DB rejected the overlap).
+    if (conflict || !booking) {
+      Alert.alert(t('book.slotTakenTitle'), t('book.slotTakenMsg'));
+      setSelTime(null);
+      await refreshDayBookings();
+      return;
+    }
+
+    // Remind the customer 3 hours before the appointment.
+    scheduleBookingReminder(t('notif.upcomingBody', { name: artistName ?? '' }), booking.starts_at, booking.id);
+
     router.replace({
       pathname: '/(customer)/home/success',
       params: {
@@ -201,10 +251,12 @@ export default function Book() {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {daySlots.map(({ time, available }) => {
               const sel = selTime === time;
+              const taken = slotTaken(time);
+              const usable = available && !taken;
               return (
                 <Pressable
                   key={time}
-                  disabled={!available}
+                  disabled={!usable}
                   onPress={() => setSelTime(time)}
                   style={{
                     paddingHorizontal: 18,
@@ -213,10 +265,19 @@ export default function Book() {
                     backgroundColor: theme.card,
                     borderWidth: 1.5,
                     borderColor: sel ? theme.text : theme.cardBorder,
-                    opacity: available ? 1 : 0.35,
+                    opacity: usable ? 1 : 0.35,
                   }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: theme.text }}>{time}</Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '600',
+                      color: theme.text,
+                      textDecorationLine: taken ? 'line-through' : 'none',
+                    }}
+                  >
+                    {time}
+                  </Text>
                 </Pressable>
               );
             })}
