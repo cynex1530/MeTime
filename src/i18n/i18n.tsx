@@ -74,6 +74,7 @@ const en: Dict = {
   'photo.notNow': 'Not now', 'photo.openSettings': 'Open Settings',
   'photo.removeTitle': 'Remove photo?', 'photo.removeMsg': 'This image will be removed.',
   'auth.comingSoon': 'Coming soon', 'auth.socialSoon': 'Social sign-in requires an OAuth provider configured in Supabase.',
+  'notif.reviewBody': "Don't forget to leave a review for: {name}",
   // services
   'services.title': 'Services', 'services.subtitle': 'What you offer and when you work',
   'services.add': 'Add service', 'services.edit': 'Edit service', 'services.serviceName': 'Service name',
@@ -188,6 +189,7 @@ const ro: Dict = {
   'photo.notNow': 'Nu acum', 'photo.openSettings': 'Deschide Setări',
   'photo.removeTitle': 'Elimini fotografia?', 'photo.removeMsg': 'Această imagine va fi eliminată.',
   'auth.comingSoon': 'În curând', 'auth.socialSoon': 'Autentificarea socială necesită un furnizor OAuth configurat în Supabase.',
+  'notif.reviewBody': 'Nu uita să lași o recenzie pentru: {name}',
   'services.title': 'Servicii', 'services.subtitle': 'Ce oferi și când lucrezi',
   'services.add': 'Adaugă serviciu', 'services.edit': 'Editează serviciu', 'services.serviceName': 'Numele serviciului',
   'services.price': 'Preț ($)', 'services.duration': 'Durată: {d} (lungimea intervalului)',
@@ -295,6 +297,7 @@ const hu: Dict = {
   'photo.notNow': 'Most nem', 'photo.openSettings': 'Beállítások megnyitása',
   'photo.removeTitle': 'Törlöd a fotót?', 'photo.removeMsg': 'A kép el lesz távolítva.',
   'auth.comingSoon': 'Hamarosan', 'auth.socialSoon': 'A közösségi bejelentkezéshez OAuth szolgáltató szükséges a Supabase-ben.',
+  'notif.reviewBody': 'Ne felejts el értékelést írni neki: {name}',
   'services.title': 'Szolgáltatások', 'services.subtitle': 'Mit kínálsz és mikor dolgozol',
   'services.add': 'Szolgáltatás hozzáadása', 'services.edit': 'Szolgáltatás szerkesztése', 'services.serviceName': 'Szolgáltatás neve',
   'services.price': 'Ár ($)', 'services.duration': 'Időtartam: {d} (az idősáv hossza)',

@@ -5,8 +5,9 @@ import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { BackButton, Card, Screen, ScreenTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useT } from '../../../src/i18n/i18n';
-import { fetchMyBookings } from '../../../src/lib/api';
+import { fetchMyBookings, hasReviewedArtist } from '../../../src/lib/api';
 import { formatBookingDate, formatPrice, formatTimeRange } from '../../../src/lib/format';
+import { scheduleReviewReminder } from '../../../src/lib/notifications';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Booking } from '../../../src/types';
 
@@ -17,12 +18,20 @@ export default function BookingDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
+  // Whether this customer already reviewed this artist — if so, don't ask again.
+  const [reviewed, setReviewed] = useState(false);
 
   useEffect(() => {
     if (profile) {
       fetchMyBookings(profile.id).then((all) => setBooking(all.find((b) => b.id === id) ?? null));
     }
   }, [profile, id]);
+
+  useEffect(() => {
+    if (profile && booking?.artist_id) {
+      hasReviewedArtist(profile.id, booking.artist_id).then(setReviewed);
+    }
+  }, [profile, booking?.artist_id]);
 
   if (!booking) return <Screen scroll={false} />;
 
@@ -35,6 +44,22 @@ export default function BookingDetail() {
     }
     // tel: URLs must not contain spaces
     Linking.openURL(`tel:${booking.artist_phone.replace(/[\s()-]/g, '')}`);
+  }
+
+  // "Finish" = appointment is done → send a review-reminder notification.
+  // Tapping the notification opens the review screen (handled in the root layout).
+  async function finishAppointment() {
+    if (!booking) return;
+    const artistName = booking.artist_name ?? 'the artist';
+    await scheduleReviewReminder(t('notif.reviewBody', { name: artistName }), {
+      kind: 'review',
+      id: booking.id,
+      artist: artistName,
+      service: booking.service_name,
+      salon: booking.salon_name ?? '',
+      salonId: booking.salon_id ?? '',
+      artistId: booking.artist_id ?? '',
+    });
   }
 
   const rows: Array<{ icon: keyof typeof Feather.glyphMap; label: string; value: string }> = [
@@ -88,38 +113,30 @@ export default function BookingDetail() {
         {t('bd.callHint', { name: artistFirstName })}
       </Text>
 
-      {/* Temporary: mark the appointment finished and leave a review */}
-      <Pressable
-        onPress={() =>
-          router.push({
-            pathname: '/(customer)/bookings/review',
-            params: {
-              id: booking.id,
-              artist: booking.artist_name ?? 'the artist',
-              service: booking.service_name,
-              salon: booking.salon_name ?? '',
-              salonId: booking.salon_id ?? '',
-              artistId: booking.artist_id ?? '',
-            },
-          })
-        }
-        style={({ pressed }) => ({
-          marginTop: 14,
-          backgroundColor: theme.card,
-          borderRadius: 16,
-          borderWidth: 1.5,
-          borderColor: theme.hairlineStrong,
-          paddingVertical: 16,
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 8,
-          opacity: pressed ? 0.85 : 1,
-        })}
-      >
-        <Feather name="check-circle" size={17} color={theme.text} />
-        <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{t('bd.finish')}</Text>
-      </Pressable>
+      {/* Temporary: mark the appointment finished. This fires a local
+          "leave a review" notification — but only if the customer hasn't
+          already reviewed this artist (we never ask twice for the same one). */}
+      {!reviewed ? (
+        <Pressable
+          onPress={finishAppointment}
+          style={({ pressed }) => ({
+            marginTop: 14,
+            backgroundColor: theme.card,
+            borderRadius: 16,
+            borderWidth: 1.5,
+            borderColor: theme.hairlineStrong,
+            paddingVertical: 16,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 8,
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <Feather name="check-circle" size={17} color={theme.text} />
+          <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{t('bd.finish')}</Text>
+        </Pressable>
+      ) : null}
     </Screen>
   );
 }

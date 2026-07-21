@@ -42,6 +42,12 @@
         {
           "photosPermission": "Me Time needs access to your photos so you can set a profile picture."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#6C5CE7"
+        }
       ]
     ],
     "experiments": {

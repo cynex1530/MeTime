@@ -117,6 +117,30 @@ export async function fetchArtistServices(artistId: string, categoryId?: string 
 
 // Bookings finished locally in demo mode (so they disappear from the list too)
 const localCompleted = new Set<string>();
+// (customer, artist) pairs already reviewed — so we never ask the same
+// customer to review the same artist twice (tracked locally in demo mode).
+const reviewedPairs = new Set<string>();
+const pairKey = (customerId: string, artistId: string) => `${customerId}:${artistId}`;
+
+/**
+ * Has this customer already left a review for this artist? Used to suppress the
+ * review prompt/notification for an artist the customer has reviewed before.
+ * A different artist is asked independently.
+ */
+export async function hasReviewedArtist(customerId: string, artistId: string | null): Promise<boolean> {
+  if (!customerId || !artistId) return false;
+  if (reviewedPairs.has(pairKey(customerId, artistId))) return true;
+  if (supabase) {
+    const { data } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('customer_id', customerId)
+      .eq('artist_id', artistId)
+      .limit(1);
+    if (data?.length) return true;
+  }
+  return false;
+}
 
 export async function fetchMyBookings(customerId: string): Promise<Booking[]> {
   if (supabase) {
@@ -163,6 +187,8 @@ export async function finishBooking(
   } else {
     localCompleted.add(booking.id);
   }
+  // Remember this customer already reviewed this artist (both modes).
+  if (booking.artist_id) reviewedPairs.add(pairKey(customerId, booking.artist_id));
 }
 
 export type ArtistReview = { rating: number; comment: string | null; customer_name: string | null; created_at: string };
