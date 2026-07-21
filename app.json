@@ -12,14 +12,14 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.metime.mobile",
+      "bundleIdentifier": "com.metime.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Me Time uses your location to show salons and artists near you.",
         "NSPhotoLibraryUsageDescription": "Me Time needs access to your photos so you can set a profile picture."
       }
     },
     "android": {
-      "package": "app.metime.mobile",
+      "package": "com.metime.app",
       "adaptiveIcon": {
         "backgroundColor": "#1c1c1e"
       },
