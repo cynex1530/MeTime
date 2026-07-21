@@ -10,7 +10,7 @@ import { LANGUAGES, useT } from '../../src/i18n/i18n';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 export default function CustomerProfile() {
-  const { theme, isDark, setDark } = useTheme();
+  const { theme } = useTheme();
   const { profile, signOut, updateProfile } = useAuth();
   const { t, lang, setLang } = useT();
   const router = useRouter();
@@ -56,16 +56,6 @@ export default function CustomerProfile() {
           />
         ) : null}
       </View>
-
-      <SectionTitle>{t('profile.appearance')}</SectionTitle>
-      <Segmented
-        options={[
-          { value: 'light', label: t('profile.light') },
-          { value: 'dark', label: t('profile.dark') },
-        ]}
-        value={isDark ? 'dark' : 'light'}
-        onChange={(v) => setDark(v === 'dark')}
-      />
 
       <SectionTitle>{t('profile.language')}</SectionTitle>
       <Segmented

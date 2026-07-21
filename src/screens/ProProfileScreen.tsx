@@ -18,7 +18,7 @@ import { Salon } from '../types';
  * sun/moon theme pill, and the red Log out button at the very bottom.
  */
 export function ProProfileScreen() {
-  const { theme, isDark, setDark } = useTheme();
+  const { theme, isDark } = useTheme();
   const { profile, signOut, updateProfile } = useAuth();
   const { t, lang, setLang } = useT();
   const router = useRouter();
@@ -200,16 +200,6 @@ export function ProProfileScreen() {
           ) : null}
         </>
       ) : null}
-
-      <SectionTitle>{t('profile.appearance')}</SectionTitle>
-      <Segmented
-        options={[
-          { value: 'light', label: t('profile.light') },
-          { value: 'dark', label: t('profile.dark') },
-        ]}
-        value={isDark ? 'dark' : 'light'}
-        onChange={(v) => setDark(v === 'dark')}
-      />
 
       <SectionTitle>{t('profile.language')}</SectionTitle>
       <Segmented
