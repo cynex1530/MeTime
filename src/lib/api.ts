@@ -156,11 +156,14 @@ async function markReviewed(customerId: string, artistId: string): Promise<void>
  * Has this customer already left a review for this artist? Used to suppress the
  * review prompt/notification for an artist the customer has reviewed before.
  * A different artist is asked independently.
+ *
+ * The source of truth is whichever store actually holds the review: the
+ * database when a backend is configured, otherwise the phone (AsyncStorage).
+ * We never mix them, so deleting a review (or resetting) reliably brings the
+ * review flow back — nothing stays "stuck".
  */
 export async function hasReviewedArtist(customerId: string, artistId: string | null): Promise<boolean> {
   if (!customerId || !artistId) return false;
-  await loadReviewedPairs();
-  if (reviewedPairs.has(pairKey(customerId, artistId))) return true;
   if (supabase) {
     const { data } = await supabase
       .from('reviews')
@@ -168,13 +171,28 @@ export async function hasReviewedArtist(customerId: string, artistId: string | n
       .eq('customer_id', customerId)
       .eq('artist_id', artistId)
       .limit(1);
-    if (data?.length) {
-      // cache the server's answer on the phone too
-      await markReviewed(customerId, artistId);
-      return true;
-    }
+    return !!(data && data.length);
   }
-  return false;
+  await loadReviewedPairs();
+  return reviewedPairs.has(pairKey(customerId, artistId));
+}
+
+/**
+ * Testing helper: forget every "already reviewed" mark so the review flow can be
+ * exercised again. Clears the phone cache and, with a backend, deletes this
+ * customer's review rows (their own test data).
+ */
+export async function clearReviewedArtists(customerId?: string): Promise<void> {
+  reviewedPairs.clear();
+  reviewedLoaded = true; // treat as loaded-and-empty
+  try {
+    await AsyncStorage.removeItem(REVIEWED_KEY);
+  } catch {
+    // ignore
+  }
+  if (supabase && customerId) {
+    await supabase.from('reviews').delete().eq('customer_id', customerId);
+  }
 }
 
 export async function fetchMyBookings(customerId: string): Promise<Booking[]> {
@@ -219,11 +237,12 @@ export async function finishBooking(
       comment: comment.trim() || null,
     });
     await supabase.from('bookings').update({ status: 'completed' }).eq('id', booking.id);
+    // The inserted review row is itself the "already reviewed" record.
   } else {
     localCompleted.add(booking.id);
+    // Demo mode: remember on the phone that this customer reviewed this artist.
+    if (booking.artist_id) await markReviewed(customerId, booking.artist_id);
   }
-  // Remember (and persist to the phone) that this customer reviewed this artist.
-  if (booking.artist_id) await markReviewed(customerId, booking.artist_id);
 }
 
 export type ArtistReview = { rating: number; comment: string | null; customer_name: string | null; created_at: string };

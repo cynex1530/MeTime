@@ -4,9 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { ProfilePhoto } from '../../src/components/ProfilePhoto';
 import { Segmented } from '../../src/components/Segmented';
+import { ConfirmDialog } from '../../src/components/Sheet';
 import { Field, PrimaryButton, Screen, ScreenTitle, SectionTitle } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
 import { LANGUAGES, useT } from '../../src/i18n/i18n';
+import { clearReviewedArtists } from '../../src/lib/api';
 import { useTheme } from '../../src/theme/ThemeContext';
 
 export default function CustomerProfile() {
@@ -18,6 +20,7 @@ export default function CustomerProfile() {
   const [name, setName] = useState(profile?.full_name ?? '');
   const [email, setEmail] = useState(profile?.email ?? '');
   const [phone, setPhone] = useState(profile?.phone ?? '');
+  const [showResetReviews, setShowResetReviews] = useState(false);
 
   useEffect(() => {
     setName(profile?.full_name ?? '');
@@ -62,6 +65,36 @@ export default function CustomerProfile() {
         options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
         value={lang}
         onChange={setLang}
+      />
+
+      {/* Temporary testing aid: forget "already reviewed" marks so the review
+          flow (Finish button + notification) can be exercised again. */}
+      <Pressable
+        onPress={() => setShowResetReviews(true)}
+        style={({ pressed }) => ({
+          marginTop: 20,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          paddingVertical: 12,
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        <Feather name="rotate-ccw" size={15} color={theme.textSecondary} />
+        <Text style={{ color: theme.textSecondary, fontSize: 14, fontWeight: '600' }}>{t('profile.resetReviews')}</Text>
+      </Pressable>
+
+      <ConfirmDialog
+        visible={showResetReviews}
+        title={t('profile.resetReviewsTitle')}
+        message={t('profile.resetReviewsMsg')}
+        confirmLabel={t('common.reset')}
+        onCancel={() => setShowResetReviews(false)}
+        onConfirm={async () => {
+          setShowResetReviews(false);
+          await clearReviewedArtists(profile?.id);
+        }}
       />
 
       <Pressable
