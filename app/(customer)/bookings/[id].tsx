@@ -5,7 +5,7 @@ import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { BackButton, Card, Screen, ScreenTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useT } from '../../../src/i18n/i18n';
-import { fetchMyBookings } from '../../../src/lib/api';
+import { fetchMyBookings, hasReviewedArtist } from '../../../src/lib/api';
 import { formatBookingDate, formatPrice, formatTimeRange } from '../../../src/lib/format';
 import { scheduleReviewReminder } from '../../../src/lib/notifications';
 import { useTheme } from '../../../src/theme/ThemeContext';
@@ -18,12 +18,20 @@ export default function BookingDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<Booking | null>(null);
+  // Already reviewed this artist? Then no Finish button, no review, no notification.
+  const [reviewed, setReviewed] = useState(false);
 
   useEffect(() => {
     if (profile) {
       fetchMyBookings(profile.id).then((all) => setBooking(all.find((b) => b.id === id) ?? null));
     }
   }, [profile, id]);
+
+  useEffect(() => {
+    if (profile && booking?.artist_id) {
+      hasReviewedArtist(profile.id, booking.artist_id).then(setReviewed);
+    }
+  }, [profile, booking?.artist_id]);
 
   if (!booking) return <Screen scroll={false} />;
 
@@ -109,26 +117,29 @@ export default function BookingDetail() {
       </Text>
 
       {/* Temporary test button: marks the appointment finished, fires the
-          "leave a review" notification, and opens the review screen. */}
-      <Pressable
-        onPress={finishAppointment}
-        style={({ pressed }) => ({
-          marginTop: 14,
-          backgroundColor: theme.card,
-          borderRadius: 16,
-          borderWidth: 1.5,
-          borderColor: theme.hairlineStrong,
-          paddingVertical: 16,
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 8,
-          opacity: pressed ? 0.85 : 1,
-        })}
-      >
-        <Feather name="check-circle" size={17} color={theme.text} />
-        <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{t('bd.finish')}</Text>
-      </Pressable>
+          "leave a review" notification, and opens the review screen. Hidden
+          once this customer has reviewed this artist (only one review each). */}
+      {!reviewed ? (
+        <Pressable
+          onPress={finishAppointment}
+          style={({ pressed }) => ({
+            marginTop: 14,
+            backgroundColor: theme.card,
+            borderRadius: 16,
+            borderWidth: 1.5,
+            borderColor: theme.hairlineStrong,
+            paddingVertical: 16,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 8,
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <Feather name="check-circle" size={17} color={theme.text} />
+          <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>{t('bd.finish')}</Text>
+        </Pressable>
+      ) : null}
     </Screen>
   );
 }

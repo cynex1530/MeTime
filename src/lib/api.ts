@@ -3,6 +3,7 @@
  * bundled sample data when the client is unconfigured, errors, or is empty —
  * so the app always renders the design.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   SAMPLE_ARTISTS,
   SAMPLE_BOOKINGS,
@@ -117,10 +118,39 @@ export async function fetchArtistServices(artistId: string, categoryId?: string 
 
 // Bookings finished locally in demo mode (so they disappear from the list too)
 const localCompleted = new Set<string>();
-// (customer, artist) pairs already reviewed — so we never ask the same
-// customer to review the same artist twice (tracked locally in demo mode).
+
+// (customer, artist) pairs already reviewed — so we never ask the same customer
+// to review the same artist twice. Persisted to the phone (AsyncStorage) so the
+// rule survives app restarts, and kept in a Set as an in-memory cache.
+const REVIEWED_KEY = 'mtReviewedPairs';
 const reviewedPairs = new Set<string>();
 const pairKey = (customerId: string, artistId: string) => `${customerId}:${artistId}`;
+
+let reviewedLoaded = false;
+async function loadReviewedPairs(): Promise<void> {
+  if (reviewedLoaded) return;
+  reviewedLoaded = true;
+  try {
+    const raw = await AsyncStorage.getItem(REVIEWED_KEY);
+    if (raw) (JSON.parse(raw) as string[]).forEach((k) => reviewedPairs.add(k));
+  } catch {
+    // ignore — start empty if storage is unreadable
+  }
+}
+async function persistReviewedPairs(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(REVIEWED_KEY, JSON.stringify([...reviewedPairs]));
+  } catch {
+    // ignore — dedup still holds for this session via the in-memory Set
+  }
+}
+
+/** Record that this customer has reviewed this artist (persisted to the phone). */
+async function markReviewed(customerId: string, artistId: string): Promise<void> {
+  await loadReviewedPairs();
+  reviewedPairs.add(pairKey(customerId, artistId));
+  await persistReviewedPairs();
+}
 
 /**
  * Has this customer already left a review for this artist? Used to suppress the
@@ -129,6 +159,7 @@ const pairKey = (customerId: string, artistId: string) => `${customerId}:${artis
  */
 export async function hasReviewedArtist(customerId: string, artistId: string | null): Promise<boolean> {
   if (!customerId || !artistId) return false;
+  await loadReviewedPairs();
   if (reviewedPairs.has(pairKey(customerId, artistId))) return true;
   if (supabase) {
     const { data } = await supabase
@@ -137,7 +168,11 @@ export async function hasReviewedArtist(customerId: string, artistId: string | n
       .eq('customer_id', customerId)
       .eq('artist_id', artistId)
       .limit(1);
-    if (data?.length) return true;
+    if (data?.length) {
+      // cache the server's answer on the phone too
+      await markReviewed(customerId, artistId);
+      return true;
+    }
   }
   return false;
 }
@@ -187,8 +222,8 @@ export async function finishBooking(
   } else {
     localCompleted.add(booking.id);
   }
-  // Remember this customer already reviewed this artist (both modes).
-  if (booking.artist_id) reviewedPairs.add(pairKey(customerId, booking.artist_id));
+  // Remember (and persist to the phone) that this customer reviewed this artist.
+  if (booking.artist_id) await markReviewed(customerId, booking.artist_id);
 }
 
 export type ArtistReview = { rating: number; comment: string | null; customer_name: string | null; created_at: string };
