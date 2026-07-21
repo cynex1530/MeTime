@@ -7,6 +7,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { CitySearchModal } from '../../../src/components/CitySearchModal';
 import { ImageSlot } from '../../../src/components/ImageSlot';
 import { Segmented } from '../../../src/components/Segmented';
+import { Skeleton } from '../../../src/components/Skeleton';
 import { Card, GlassBadge, Screen, SectionTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useT } from '../../../src/i18n/i18n';
@@ -23,6 +24,7 @@ export default function Home() {
   const router = useRouter();
   const [audience, setAudience] = useState<AudienceTab>('him');
   const [cats, setCats] = useState<Category[]>([]);
+  const [catsLoading, setCatsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<Salon[]>([]);
   const [showCity, setShowCity] = useState(false);
@@ -30,7 +32,10 @@ export default function Home() {
   const searching = search.trim().length > 0;
 
   useEffect(() => {
-    fetchCategories(audience).then(setCats);
+    setCatsLoading(true);
+    fetchCategories(audience)
+      .then(setCats)
+      .finally(() => setCatsLoading(false));
   }, [audience]);
 
   // Live-filter salons & services as the user types (debounced).
@@ -134,7 +139,7 @@ export default function Home() {
       {searching ? (
         <SearchResults results={results} query={search.trim()} />
       ) : (
-        <CategoryGrid cats={cats} audience={audience} setAudience={setAudience} />
+        <CategoryGrid cats={cats} loading={catsLoading} audience={audience} setAudience={setAudience} />
       )}
 
       {/* City picker (opened by the location row or the filter button) */}
@@ -150,10 +155,12 @@ export default function Home() {
 
 function CategoryGrid({
   cats,
+  loading,
   audience,
   setAudience,
 }: {
   cats: Category[];
+  loading: boolean;
   audience: AudienceTab;
   setAudience: (v: AudienceTab) => void;
 }) {
@@ -175,7 +182,14 @@ function CategoryGrid({
       </View>
 
       <SectionTitle>{t('home.categories')}</SectionTitle>
-      {/* 2-column grid of square tiles */}
+      {loading ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} style={{ width: '48.3%', aspectRatio: 1, borderRadius: 20, marginBottom: 12 }} />
+          ))}
+        </View>
+      ) : (
+      /* 2-column grid of square tiles */
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
         {cats.map((c) => (
           <Pressable
@@ -225,6 +239,7 @@ function CategoryGrid({
           </Pressable>
         ))}
       </View>
+      )}
     </>
   );
 }

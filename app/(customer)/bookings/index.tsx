@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
+import { EmptyState, SkeletonList } from '../../../src/components/Skeleton';
 import { Card, Screen, ScreenTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useT } from '../../../src/i18n/i18n';
@@ -16,10 +17,15 @@ export default function BookingsList() {
   const { t } = useT();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      if (profile) fetchMyBookings(profile.id).then(setBookings);
+      if (!profile) return;
+      setLoading(true);
+      fetchMyBookings(profile.id)
+        .then(setBookings)
+        .finally(() => setLoading(false));
     }, [profile])
   );
 
@@ -58,22 +64,23 @@ export default function BookingsList() {
   return (
     <Screen clearTabBar>
       <ScreenTitle title={t('bookings.title')} subtitle={t('bookings.subtitle')} />
-      <View style={{ gap: 12 }}>
-        {upcoming.map(renderRow)}
-        {upcoming.length === 0 ? (
-          <Text style={{ color: theme.textSecondary, textAlign: 'center', marginVertical: 30 }}>
-            {t('bookings.empty')}
-          </Text>
-        ) : null}
-        {past.length > 0 ? (
-          <>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginTop: 20, marginBottom: 2 }}>
-              {t('bookings.past')}
-            </Text>
-            {past.map(renderRow)}
-          </>
-        ) : null}
-      </View>
+      {loading ? (
+        <SkeletonList count={3} />
+      ) : bookings.length === 0 ? (
+        <EmptyState icon="calendar" title={t('bookings.empty')} />
+      ) : (
+        <View style={{ gap: 12 }}>
+          {upcoming.map(renderRow)}
+          {past.length > 0 ? (
+            <>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: theme.text, marginTop: 20, marginBottom: 2 }}>
+                {t('bookings.past')}
+              </Text>
+              {past.map(renderRow)}
+            </>
+          ) : null}
+        </View>
+      )}
     </Screen>
   );
 }

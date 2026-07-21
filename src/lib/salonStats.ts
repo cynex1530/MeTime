@@ -356,8 +356,6 @@ export function computeSalonStats(
   now = new Date()
 ): SalonStats {
   const { bookings, artists, reviews } = input;
-  if (!bookings.length && !reviews.length) return SALON_DEMO;
-
   const active = bookings.filter((b) => b.status !== 'cancelled');
   const cancelled = bookings.filter((b) => b.status === 'cancelled');
   const money = (b: any) => (b.price_cents ?? 0) / 100;
@@ -471,13 +469,38 @@ export function computeSalonStats(
     return { label, value: v };
   });
   const dMax = Math.max(1, ...demandSlots.map((s) => s.value));
+  // Suggested free slots = the least-busy hours (lowest demand).
+  const suggested = [...demandSlots]
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 4)
+    .map((s) => s.label);
   const demand = {
     slots: demandSlots.map((s) => ({
       ...s,
       level: (s.value >= dMax * 0.75 ? 'peak' : s.value <= dMax * 0.3 ? 'low' : 'mid') as 'low' | 'mid' | 'peak',
     })),
-    suggested: SALON_DEMO.demand.suggested,
+    suggested,
   };
+
+  // Occupancy heatmap: real bookings per artist per weekday (Mon…Sun),
+  // normalized to the busiest cell across the salon.
+  const occRows = perf.map((a) => {
+    const cells = Array.from({ length: 7 }, () => 0);
+    active
+      .filter((b) => b.artist_id === a.id)
+      .forEach((b) => {
+        const wd = (new Date(b.starts_at).getDay() + 6) % 7; // Monday = 0
+        cells[wd] += 1;
+      });
+    return { name: (a.name || '').split(' ')[0], initials: a.initials, color: ACCENT, raw: cells };
+  });
+  const occMax = Math.max(1, ...occRows.flatMap((r) => r.raw));
+  const occupancy = occRows.map((r) => ({
+    name: r.name,
+    initials: r.initials,
+    color: r.color,
+    cells: r.raw.map((c) => c / occMax),
+  }));
 
   // rating evolution (6 mo)
   const evolution = Array.from({ length: 6 }, (_, i) => {
@@ -495,7 +518,7 @@ export function computeSalonStats(
   const avgTicket = active.length ? Math.round(totalRev / active.length) : 0;
 
   return {
-    salonName: SALON_DEMO.salonName,
+    salonName: '',
     kpis: [
       { key: 'revenue', label: 'Revenue', value: kfmt(totalRev), delta: pct(monthRev, prevRev), good: true, icon: 'dollar-sign', tint: 'rgba(108,92,231,0.14)', fg: '#6C5CE7' },
       { key: 'appts', label: 'Appointments', value: `${active.length}`, delta: 0, good: true, icon: 'calendar', tint: 'rgba(47,191,166,0.16)', fg: '#2FBFA6' },
@@ -512,15 +535,15 @@ export function computeSalonStats(
       apptsTotal: `${active.length}`,
     },
     artists: perf,
-    comparison: SALON_DEMO.comparison,
+    comparison: [],
     services: {
-      mostPopular: servicesList.length ? { name: servicesList[0].name, booked: [...svcMap.entries()].sort((a, b) => b[1].appts - a[1].appts)[0][1].appts } : SALON_DEMO.services.mostPopular,
-      topRevenue: servicesList.length ? { name: servicesList[0].name, amount: kfmt(servicesList[0].revenue) } : SALON_DEMO.services.topRevenue,
+      mostPopular: servicesList.length ? { name: servicesList[0].name, booked: [...svcMap.entries()].sort((a, b) => b[1].appts - a[1].appts)[0][1].appts } : { name: '—', booked: 0 },
+      topRevenue: servicesList.length ? { name: servicesList[0].name, amount: kfmt(servicesList[0].revenue) } : { name: '—', amount: '$0' },
       avgPrice: `$${avgTicket}`,
       avgDuration: `${active.length ? Math.round(active.reduce((n, b) => n + (b.duration_minutes ?? 0), 0) / active.length) : 0} min`,
-      list: servicesList.length ? servicesList : SALON_DEMO.services.list,
+      list: servicesList,
     },
-    occupancy: SALON_DEMO.occupancy, // heatmap not tracked
+    occupancy,
     demand,
     customers: [
       { label: 'New customers', value: `${newThisMonth}`, delta: 0, good: true, dot: '#6C5CE7' },
@@ -539,8 +562,8 @@ export function computeSalonStats(
     },
     cancellations: {
       cancelRate: { value: `${cancelRate.toFixed(1)}%`, delta: 0 },
-      noShowRate: SALON_DEMO.cancellations.noShowRate,
-      reasons: SALON_DEMO.cancellations.reasons, // reasons not tracked
+      noShowRate: { value: '—', delta: 0 }, // no-show not tracked in the schema
+      reasons: [], // cancellation reasons not tracked
       byArtist: artists
         .map((a) => {
           const total = bookings.filter((b) => b.artist_id === a.id).length;

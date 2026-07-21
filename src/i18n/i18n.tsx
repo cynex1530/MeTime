@@ -128,6 +128,7 @@ const en: Dict = {
   'dash.returnRateDesc': '{returned} of {all} clients came back to book again.',
   'dash.returnRateDelta': '+{n} pts vs last month', 'dash.reviewsCount': '({n} reviews)', 'dash.reviewCount': '({n} review)',
   'dash.anonymous': 'Anonymous', 'dash.growthDelta': ' vs last month',
+  'dash.emptyTitle': 'No data yet', 'dash.emptySubtitle': 'Stats appear here once there are bookings and reviews.',
   // salon analytics
   'sa.title': 'Salon Analytics', 'sa.subtitle': 'full performance', 'sa.dateRange': 'Date range',
   'sa.salon': 'Salon', 'sa.service': 'Service', 'sa.artistPerf': 'Artist performance', 'sa.searchArtists': 'Search artists or profession',
@@ -248,6 +249,7 @@ const ro: Dict = {
   'dash.returnRateDesc': '{returned} din {all} clienți au revenit pentru o nouă programare.',
   'dash.returnRateDelta': '+{n} pct față de luna trecută', 'dash.reviewsCount': '({n} recenzii)', 'dash.reviewCount': '({n} recenzie)',
   'dash.anonymous': 'Anonim', 'dash.growthDelta': ' față de luna trecută',
+  'dash.emptyTitle': 'Încă nu există date', 'dash.emptySubtitle': 'Statisticile apar aici după ce există programări și recenzii.',
   'sa.title': 'Analize salon', 'sa.subtitle': 'performanță completă', 'sa.dateRange': 'Interval',
   'sa.salon': 'Salon', 'sa.service': 'Serviciu', 'sa.artistPerf': 'Performanța artiștilor', 'sa.searchArtists': 'Caută artiști sau profesie',
   'sa.leaderboards': 'Clasamente', 'sa.view': 'Vezi', 'sa.servicesAnalytics': 'Analize servicii',
@@ -366,6 +368,7 @@ const hu: Dict = {
   'dash.returnRateDesc': '{returned} / {all} ügyfél foglalt újra időpontot.',
   'dash.returnRateDelta': '+{n} pont az előző hónaphoz', 'dash.reviewsCount': '({n} értékelés)', 'dash.reviewCount': '({n} értékelés)',
   'dash.anonymous': 'Névtelen', 'dash.growthDelta': ' az előző hónaphoz',
+  'dash.emptyTitle': 'Még nincs adat', 'dash.emptySubtitle': 'A statisztikák akkor jelennek meg, ha vannak foglalások és értékelések.',
   'sa.title': 'Szalon analitika', 'sa.subtitle': 'teljes teljesítmény', 'sa.dateRange': 'Időszak',
   'sa.salon': 'Szalon', 'sa.service': 'Szolgáltatás', 'sa.artistPerf': 'Szakemberek teljesítménye', 'sa.searchArtists': 'Szakember vagy szakma keresése',
   'sa.leaderboards': 'Ranglisták', 'sa.view': 'Megnéz', 'sa.servicesAnalytics': 'Szolgáltatás-analitika',

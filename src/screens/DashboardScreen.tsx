@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { RingProgress } from '../components/RingProgress';
+import { Skeleton } from '../components/Skeleton';
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
 import { useT } from '../i18n/i18n';
@@ -83,18 +84,25 @@ export function DashboardScreen() {
   const [reviews, setReviews] = useState<ArtistReview[]>([]);
   const [revKey, setRevKey] = useState<RevenueKey>('month');
   const [bookKey, setBookKey] = useState<BookingKey>('today');
+  const [loading, setLoading] = useState(!!supabase);
 
   useEffect(() => {
     (async () => {
       if (!supabase) {
         setStats(DEMO_STATS);
+        setLoading(false);
         return;
       }
       if (!profile) return;
-      const bookings = await fetchStatsBookings(profile);
-      setStats(computeStats(bookings));
-      const artist = await fetchMyArtistRow(profile.id);
-      setReviews(await fetchArtistReviews(artist?.id ?? null));
+      setLoading(true);
+      try {
+        const bookings = await fetchStatsBookings(profile);
+        setStats(computeStats(bookings));
+        const artist = await fetchMyArtistRow(profile.id);
+        setReviews(await fetchArtistReviews(artist?.id ?? null));
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [profile]);
 
@@ -108,6 +116,23 @@ export function DashboardScreen() {
   const trendMax = useMemo(() => Math.max(...stats.trend.map((pt) => pt.value), 1), [stats.trend]);
 
   const barGrey = theme.isDark ? 'rgba(235,235,245,0.22)' : '#d3d3d8';
+
+  if (loading) {
+    return (
+      <Screen clearTabBar>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+          <BackButton />
+          <Text style={{ fontSize: 30, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>{t('dash.title')}</Text>
+        </View>
+        <View style={{ gap: 16 }}>
+          <Skeleton style={{ height: 150, borderRadius: 20 }} />
+          <Skeleton style={{ height: 150, borderRadius: 20 }} />
+          <Skeleton style={{ height: 120, borderRadius: 20 }} />
+          <Skeleton style={{ height: 200, borderRadius: 20 }} />
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen clearTabBar>

@@ -2,11 +2,12 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { EmptyState, Skeleton } from '../components/Skeleton';
 import { BackButton, Card, Screen } from '../components/ui';
 import { useAuth } from '../hooks/useAuth';
 import { useT } from '../i18n/i18n';
 import { fetchMyLocations, fetchSalonAnalyticsData } from '../lib/api';
-import { ACCENT, ArtistPerf, computeSalonStats, leaderboards, SALON_DEMO, SalonStats, scopeStatsToService } from '../lib/salonStats';
+import { ACCENT, ArtistPerf, computeSalonStats, leaderboards, SalonStats, scopeStatsToService } from '../lib/salonStats';
 import { supabase } from '../lib/supabase';
 import { Salon } from '../types';
 import { useTheme } from '../theme/ThemeContext';
@@ -151,6 +152,9 @@ function FilterDropdown({
   );
 }
 
+// A real, all-zero stats object (no demo data) used until the DB loads.
+const EMPTY_STATS: SalonStats = computeSalonStats({ bookings: [], artists: [], reviews: [] });
+
 function Avatar({ initials, color, size = 46 }: { initials: string; color: string; size?: number }) {
   return (
     <View style={{ width: size, height: size, borderRadius: 14, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>
@@ -200,8 +204,9 @@ export function SalonAnalyticsScreen() {
   const [dateRange, setDateRange] = useState('Last 30 days');
   const [serviceFilter, setServiceFilter] = useState('All');
 
-  // Base stats computed from the database (demo template until it loads / when empty)
-  const [baseStats, setBaseStats] = useState<SalonStats>(SALON_DEMO);
+  // Base stats computed from the database. Starts as real zeros (never demo).
+  const [baseStats, setBaseStats] = useState<SalonStats>(EMPTY_STATS);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (profile)
@@ -213,11 +218,20 @@ export function SalonAnalyticsScreen() {
 
   // Read the selected salon's real data from the DB and compute the stats.
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     const ids = salonId ? [salonId] : salons.map((s) => s.id);
     const realIds = ids.filter((id) => id && !id.startsWith('local') && id !== 'l1');
-    if (!realIds.length) return;
-    fetchSalonAnalyticsData(realIds).then((data) => setBaseStats(computeSalonStats(data)));
+    if (!realIds.length) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    fetchSalonAnalyticsData(realIds)
+      .then((data) => setBaseStats(computeSalonStats(data)))
+      .finally(() => setLoading(false));
   }, [salonId, salons]);
 
   // Selecting a service scopes the ENTIRE dashboard to that service.
@@ -235,6 +249,51 @@ export function SalonAnalyticsScreen() {
     (a) => a.name.toLowerCase().includes(query.toLowerCase()) || a.profession.toLowerCase().includes(query.toLowerCase())
   );
   const filteredServices = stats.services.list;
+  const isEmpty = stats.artists.length === 0 && stats.overview.apptsTotal === '0';
+
+  if (loading) {
+    return (
+      <Screen clearTabBar>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+          <BackButton />
+          <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>{t('sa.title')}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 14 }}>
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} style={{ width: '47%', height: 96, borderRadius: 20 }} />
+          ))}
+        </View>
+        <Skeleton style={{ height: 260, borderRadius: 20, marginTop: 16 }} />
+        <Skeleton style={{ height: 130, borderRadius: 20, marginTop: 16 }} />
+        <Skeleton style={{ height: 130, borderRadius: 20, marginTop: 12 }} />
+      </Screen>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <Screen clearTabBar>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+          <BackButton />
+          <View>
+            <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: -0.8, color: theme.text }}>{t('sa.title')}</Text>
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>{selectedSalonName}</Text>
+          </View>
+        </View>
+        {salons.length > 1 ? (
+          <View style={{ marginBottom: 12 }}>
+            <FilterDropdown
+              label={t('sa.salon')}
+              value={selectedSalonName}
+              options={salons.map((s) => s.name)}
+              onSelect={(name) => setSalonId(salons.find((s) => s.name === name)?.id ?? null)}
+            />
+          </View>
+        ) : null}
+        <EmptyState icon="bar-chart-2" title={t('dash.emptyTitle')} subtitle={t('dash.emptySubtitle')} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen clearTabBar>
