@@ -1,6 +1,6 @@
 export type UserRole = 'customer' | 'artist' | 'manager';
 export type Audience = 'him' | 'her' | 'both';
-export type BookingStatus = 'confirmed' | 'completed' | 'cancelled';
+export type BookingStatus = 'confirmed' | 'completed' | 'cancelled' | 'no_show';
 
 export type Profile = {
   id: string;

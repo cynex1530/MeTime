@@ -426,6 +426,30 @@ export async function fetchArtistSchedule(artistId: string | null): Promise<Book
   return SAMPLE_SCHEDULE;
 }
 
+/**
+ * The full schedule for the Bookings tab: every non-cancelled booking (past and
+ * future) so it can be grouped by day. Includes no-shows.
+ */
+export async function fetchArtistScheduleFull(artistId: string | null): Promise<Booking[]> {
+  if (supabase && artistId) {
+    const { data } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('artist_id', artistId)
+      .neq('status', 'cancelled')
+      .order('starts_at');
+    if (data) return data as Booking[];
+  }
+  return SAMPLE_SCHEDULE;
+}
+
+/** Mark a past appointment as a no-show (or clear it back to confirmed). */
+export async function setBookingNoShow(id: string, noShow: boolean): Promise<void> {
+  if (supabase && /^[0-9a-f-]{36}$/i.test(id)) {
+    await supabase.from('bookings').update({ status: noShow ? 'no_show' : 'confirmed' }).eq('id', id);
+  }
+}
+
 /** All of an artist's bookings (any status/date) — for the dashboard stats. */
 export async function fetchArtistAllBookings(artistId: string | null): Promise<Booking[]> {
   if (supabase && artistId) {

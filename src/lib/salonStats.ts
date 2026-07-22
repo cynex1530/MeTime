@@ -356,7 +356,7 @@ export function computeSalonStats(
   now = new Date()
 ): SalonStats {
   const { bookings, artists, reviews } = input;
-  const active = bookings.filter((b) => b.status !== 'cancelled');
+  const active = bookings.filter((b) => b.status !== 'cancelled' && b.status !== 'no_show');
   const cancelled = bookings.filter((b) => b.status === 'cancelled');
   const money = (b: any) => (b.price_cents ?? 0) / 100;
   const pct = (a: number, b: number) => (b ? Math.round(((a - b) / b) * 100) : 0);
@@ -590,7 +590,7 @@ export function computeArtistDetail(
   now = new Date()
 ): ArtistDetail {
   const { artist, bookings, reviews } = input;
-  const active = bookings.filter((b) => b.status !== 'cancelled');
+  const active = bookings.filter((b) => b.status !== 'cancelled' && b.status !== 'no_show');
   const money = (b: any) => (b.price_cents ?? 0) / 100;
 
   const revenue = Math.round(active.reduce((n, b) => n + money(b), 0));

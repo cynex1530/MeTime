@@ -40,7 +40,7 @@ function startOfWeek(d: Date) {
 
 /** Derive the full dashboard from an artist's / salon's bookings. */
 export function computeStats(all: Booking[], now = new Date()): Stats {
-  const bookings = all.filter((b) => b.status !== 'cancelled');
+  const bookings = all.filter((b) => b.status !== 'cancelled' && b.status !== 'no_show');
   const dollars = (b: Booking) => b.price_cents / 100;
 
   const sod = startOfDay(now);
