@@ -14,6 +14,9 @@ import { useTheme } from '../theme/ThemeContext';
 import { Artist, Booking } from '../types';
 
 const RED = '#E5484D';
+// The Bookings tab shows the last 7 days and the next 4 weeks.
+const PAST_DAYS = 7;
+const FUTURE_DAYS = 28;
 
 function nextDays(count: number) {
   return Array.from({ length: count }, (_, i) => {
@@ -53,17 +56,34 @@ export function ScheduleScreen() {
       try {
         const a = await fetchMyArtistRow(profile.id);
         setArtist(a);
-        setBookings(await fetchArtistScheduleFull(a?.id ?? null));
+        const from = new Date();
+        from.setDate(from.getDate() - PAST_DAYS);
+        from.setHours(0, 0, 0, 0);
+        const to = new Date();
+        to.setDate(to.getDate() + FUTURE_DAYS);
+        to.setHours(23, 59, 59, 999);
+        setBookings(await fetchArtistScheduleFull(a?.id ?? null, from.toISOString(), to.toISOString()));
       } finally {
         setLoading(false);
       }
     })();
   }, [profile]);
 
-  // Group bookings into the distinct days that have appointments (sorted).
+  // Group bookings into the distinct days that have appointments (sorted),
+  // clamped to the last 7 days / next 4 weeks window.
   const days = useMemo(() => {
+    const lo = new Date();
+    lo.setDate(lo.getDate() - PAST_DAYS);
+    lo.setHours(0, 0, 0, 0);
+    const hi = new Date();
+    hi.setDate(hi.getDate() + FUTURE_DAYS);
+    hi.setHours(23, 59, 59, 999);
     const map = new Map<string, { key: string; date: Date; items: Booking[] }>();
     [...bookings]
+      .filter((b) => {
+        const t = new Date(b.starts_at).getTime();
+        return t >= lo.getTime() && t <= hi.getTime();
+      })
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
       .forEach((b) => {
         const key = dayKey(b.starts_at);
@@ -304,7 +324,7 @@ export function ScheduleScreen() {
         </Text>
         <Text style={{ fontSize: 15, color: theme.textSecondary, marginBottom: 10 }}>{t('schedule.pickDay')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-          {nextDays(8).map((d) => {
+          {nextDays(FUTURE_DAYS).map((d) => {
             const sel = reschDay?.toDateString() === d.toDateString();
             return (
               <Pressable

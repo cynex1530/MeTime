@@ -427,17 +427,20 @@ export async function fetchArtistSchedule(artistId: string | null): Promise<Book
 }
 
 /**
- * The full schedule for the Bookings tab: every non-cancelled booking (past and
- * future) so it can be grouped by day. Includes no-shows.
+ * The full schedule for the Bookings tab: non-cancelled bookings (past and
+ * future, including no-shows) grouped by day. Bounded to an optional window
+ * [fromISO, toISO] — the Bookings tab shows the last 7 days and next 4 weeks.
  */
-export async function fetchArtistScheduleFull(artistId: string | null): Promise<Booking[]> {
+export async function fetchArtistScheduleFull(
+  artistId: string | null,
+  fromISO?: string,
+  toISO?: string
+): Promise<Booking[]> {
   if (supabase && artistId) {
-    const { data } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('artist_id', artistId)
-      .neq('status', 'cancelled')
-      .order('starts_at');
+    let q = supabase.from('bookings').select('*').eq('artist_id', artistId).neq('status', 'cancelled');
+    if (fromISO) q = q.gte('starts_at', fromISO);
+    if (toISO) q = q.lte('starts_at', toISO);
+    const { data } = await q.order('starts_at');
     if (data) return data as Booking[];
   }
   return SAMPLE_SCHEDULE;

@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { BackButton, Card, PrimaryButton, Screen, SectionTitle } from '../../../src/components/ui';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useT } from '../../../src/i18n/i18n';
@@ -10,6 +10,9 @@ import { scheduleBookingReminder } from '../../../src/lib/notifications';
 import { generateDaySlots } from '../../../src/lib/schedule';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { Artist, Service } from '../../../src/types';
+
+// Customers can book from tomorrow up to 4 weeks (28 days) in advance.
+const ADVANCE_DAYS = 28;
 
 function nextDays(count: number) {
   return Array.from({ length: count }, (_, i) => {
@@ -66,7 +69,7 @@ export default function Book() {
     fetchArtistDayBookings(artistId, dayStart.toISOString(), dayEnd.toISOString()).then(setDayBookings);
   }, [artistId, selDay]);
 
-  const days = useMemo(() => nextDays(8), []);
+  const days = useMemo(() => nextDays(ADVANCE_DAYS), []);
   // Slots come from the artist's open/close hours, slot length and lunch break.
   const daySlots = useMemo(
     () =>
@@ -214,9 +217,14 @@ export default function Book() {
       {service ? (
         <>
           <SectionTitle>{t('book.day')}</SectionTitle>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingRight: 8, paddingVertical: 2 }}
+          >
             {days.map((d) => {
               const sel = selDay?.toDateString() === d.toDateString();
+              const first = d.getDate() === 1;
               return (
                 <Pressable
                   key={d.toISOString()}
@@ -237,10 +245,14 @@ export default function Book() {
                   <Text style={{ fontSize: 17, fontWeight: '800', color: theme.text, marginTop: 2 }}>
                     {d.getDate()}
                   </Text>
+                  {/* month abbreviation on the 1st, so 4 weeks out stays readable */}
+                  <Text style={{ fontSize: 10, fontWeight: '600', color: theme.textTertiary, marginTop: 1 }}>
+                    {first ? d.toLocaleDateString(undefined, { month: 'short' }) : ''}
+                  </Text>
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         </>
       ) : null}
 
