@@ -1,0 +1,523 @@
+<style>
+  :root {
+    --purple: #6c5ce7;
+    --purple-light: #7b6cf0;
+    --teal: #2fbfa6;
+    --green: #42b883;
+    --amber: #e8a94b;
+    --pink: #e85b9b;
+    --blue: #4c86e8;
+    --red: #e5484d;
+
+    /* page chrome — light (biased slightly toward the accent) */
+    --ground: #eeeef3;
+    --panel: #ffffff;
+    --line: rgba(28, 28, 40, 0.10);
+    --ink: #1a1a22;
+    --muted: rgba(28, 28, 40, 0.58);
+    --faint: rgba(28, 28, 40, 0.40);
+    --eyebrow: #6c5ce7;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0f1013;
+      --panel: #17181c;
+      --line: rgba(235, 235, 245, 0.12);
+      --ink: #f2f2f7;
+      --muted: rgba(235, 235, 245, 0.62);
+      --faint: rgba(235, 235, 245, 0.42);
+      --eyebrow: #9d92f2;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1013;
+    --panel: #17181c;
+    --line: rgba(235, 235, 245, 0.12);
+    --ink: #f2f2f7;
+    --muted: rgba(235, 235, 245, 0.62);
+    --faint: rgba(235, 235, 245, 0.42);
+    --eyebrow: #9d92f2;
+  }
+  :root[data-theme="light"] {
+    --ground: #eeeef3;
+    --panel: #ffffff;
+    --line: rgba(28, 28, 40, 0.10);
+    --ink: #1a1a22;
+    --muted: rgba(28, 28, 40, 0.58);
+    --faint: rgba(28, 28, 40, 0.40);
+    --eyebrow: #6c5ce7;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .kit {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    padding: 56px 24px 80px;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--eyebrow); margin: 0 0 14px;
+  }
+  h1 { font-size: clamp(40px, 7vw, 68px); font-weight: 800; letter-spacing: -0.03em; margin: 0; text-wrap: balance; }
+  h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .lede { font-size: 18px; color: var(--muted); max-width: 60ch; margin: 18px 0 0; }
+  section { margin-top: 72px; }
+  .sec-head { margin-bottom: 26px; }
+  .sec-head p { color: var(--muted); margin: 0; max-width: 62ch; }
+  .rule { height: 1px; background: var(--line); border: 0; margin: 0; }
+
+  /* wordmark */
+  .brandbar { display: flex; align-items: center; gap: 16px; margin-bottom: 30px; }
+  .mark {
+    width: 54px; height: 54px; border-radius: 16px; flex: none;
+    background: linear-gradient(135deg, var(--purple-light), var(--purple));
+    display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 24px;
+    box-shadow: 0 8px 24px rgba(108, 92, 231, 0.35);
+  }
+  .brandbar .n { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+  .brandbar .s { font-size: 13px; color: var(--muted); }
+
+  /* palette */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .sw { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+  .sw .chip { height: 72px; }
+  .sw .meta { padding: 10px 12px; }
+  .sw .name { font-size: 13px; font-weight: 700; }
+  .sw .hex { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .subhead { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 30px 0 14px; }
+
+  /* type scale */
+  .typerow { display: flex; align-items: baseline; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .typerow .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); width: 130px; flex: none; }
+  .t-display { font-size: 44px; font-weight: 800; letter-spacing: -0.03em; }
+  .t-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+  .t-heading { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+  .t-body { font-size: 16px; font-weight: 400; }
+  .t-label { font-size: 14px; font-weight: 600; }
+  .t-caption { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+
+  /* component board */
+  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+  .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+  .cell .cap { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin-bottom: 14px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: 16px; font-weight: 700; font-size: 15px; border: 1.5px solid transparent; }
+  .btn.ink { background: #1c1c1e; color: #fff; }
+  .btn.grad { background: linear-gradient(120deg, var(--purple-light), var(--purple)); color: #fff; }
+  .btn.danger { background: transparent; color: var(--red); border-color: rgba(229, 72, 77, 0.5); }
+  .btn + .btn { margin-top: 10px; }
+  .seg { display: flex; background: rgba(120, 120, 128, 0.14); border-radius: 999px; padding: 3px; }
+  .seg span { flex: 1; text-align: center; padding: 8px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .seg span.on { background: var(--panel); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1.5px solid var(--line); }
+  .pill.on { border-color: var(--ink); }
+  .pill.taken { text-decoration: line-through; opacity: 0.4; }
+  .badge { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .badge.glass { background: rgba(255,255,255,0.85); color: #1c1c1e; }
+  .badge.good { background: rgba(48,164,108,0.16); color: #1f8a4c; }
+  .badge.rate { background: rgba(232,169,75,0.18); color: #b5791f; }
+  .badge.noshow { background: rgba(229,72,77,0.12); color: var(--red); border: 1.5px solid rgba(229,72,77,0.5); }
+  .stars { color: var(--amber); letter-spacing: 2px; font-size: 16px; }
+
+  /* device frames */
+  .screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 34px 26px; }
+  .phone {
+    --p-bg: #f2f2f7; --p-card: #fff; --p-text: #1c1c1e; --p-muted: rgba(60,60,67,0.6);
+    --p-faint: rgba(60,60,67,0.4); --p-line: rgba(60,60,67,0.12); --p-ink: #1c1c1e; --p-oninK: #fff;
+    --p-tab: rgba(248,248,250,0.92);
+    width: 100%; max-width: 300px; margin: 0 auto; aspect-ratio: 300 / 620;
+    background: var(--p-bg); color: var(--p-text);
+    border-radius: 40px; border: 9px solid #0c0c0e; overflow: hidden; position: relative;
+    box-shadow: 0 30px 60px -24px rgba(0,0,0,0.5); font-size: 12px;
+  }
+  .phone[data-t="dark"] {
+    --p-bg: #121316; --p-card: #232529; --p-text: #f2f2f7; --p-muted: rgba(235,235,245,0.6);
+    --p-faint: rgba(235,235,245,0.45); --p-line: rgba(235,235,245,0.16); --p-ink: #3a3c42; --p-oninK: #fff;
+    --p-tab: rgba(20,21,24,0.92);
+  }
+  .notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 24px; background: #0c0c0e; border-radius: 0 0 16px 16px; z-index: 5; }
+  .scr { position: absolute; inset: 0; padding: 34px 16px 70px; overflow: hidden; }
+  .scr .loc { display: flex; align-items: center; gap: 5px; color: var(--p-muted); font-weight: 600; font-size: 12px; }
+  .scr .h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; margin: 8px 0 0; }
+  .scr .sub { color: var(--p-muted); margin-top: 2px; }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--p-card); border: 1px solid var(--p-line); border-radius: 14px; padding: 11px 12px; margin-top: 14px; color: var(--p-faint); }
+  .kbtn { width: 46px; height: 46px; border-radius: 14px; background: var(--p-card); border: 1px solid var(--p-line); display: grid; place-items: center; flex: none; }
+  .p-seg { display: flex; background: rgba(120,120,128,0.14); border-radius: 999px; padding: 3px; margin-top: 14px; }
+  .p-seg span { flex: 1; text-align: center; padding: 7px; border-radius: 999px; font-weight: 600; color: var(--p-muted); }
+  .p-seg span.on { background: var(--p-card); color: var(--p-text); box-shadow: 0 1px 3px rgba(0,0,0,0.14); }
+  .p-lab { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; margin: 16px 0 10px; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { aspect-ratio: 1; border-radius: 18px; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 11px; color: #fff; }
+  .tile .tn { font-weight: 800; font-size: 15px; text-shadow: 0 1px 6px rgba(0,0,0,0.4); }
+  .tile .tc { position: absolute; left: 11px; bottom: 11px; }
+  .tile .cnt { font-size: 11px; opacity: 0.9; font-weight: 600; }
+  .tile .an { position: absolute; top: 9px; right: 9px; }
+  .pcard { background: var(--p-card); border: 1px solid var(--p-line); border-radius: 16px; padding: 13px; margin-top: 10px; }
+  .row { display: flex; align-items: center; gap: 11px; }
+  .tblk { width: 46px; text-align: center; flex: none; }
+  .tblk b { font-size: 15px; font-weight: 800; }
+  .tblk i { font-size: 10px; color: var(--p-muted); font-style: normal; display: block; }
+  .nm { font-weight: 700; font-size: 14px; }
+  .sv { color: var(--p-muted); font-size: 12px; margin-top: 1px; }
+  .days { display: flex; gap: 7px; margin-top: 4px; overflow: hidden; }
+  .day { flex: none; width: 44px; text-align: center; padding: 8px 0; border-radius: 13px; background: var(--p-card); border: 2px solid var(--p-line); }
+  .day.on { border-color: var(--p-text); }
+  .day small { font-size: 10px; font-weight: 700; color: var(--p-muted); display: block; }
+  .day b { font-size: 15px; font-weight: 800; }
+  .day .dc { display: inline-block; margin-top: 3px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--p-bg); font-size: 10px; font-weight: 800; color: var(--p-muted); line-height: 16px; }
+  .day.on .dc { background: var(--p-ink); color: #fff; }
+  .times { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
+  .tm { padding: 8px 13px; border-radius: 999px; background: var(--p-card); border: 1.5px solid var(--p-line); font-weight: 600; }
+  .tm.on { border-color: var(--p-text); }
+  .tm.x { opacity: 0.35; text-decoration: line-through; }
+  .p-btn { margin-top: 14px; background: var(--p-ink); color: var(--p-oninK); text-align: center; padding: 13px; border-radius: 16px; font-weight: 700; font-size: 14px; }
+  .kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .k { background: var(--p-card); border: 1px solid var(--p-line); border-radius: 16px; padding: 13px; }
+  .k .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 14px; }
+  .k .kv { font-size: 21px; font-weight: 800; margin-top: 9px; }
+  .k .kl { color: var(--p-muted); font-size: 12px; }
+  .k .kd { float: right; font-size: 11px; font-weight: 700; color: #1f8a4c; }
+  .chart { background: var(--p-card); border: 1px solid var(--p-line); border-radius: 16px; padding: 14px; margin-top: 10px; }
+  .bars { display: flex; align-items: flex-end; gap: 9px; height: 84px; margin-top: 10px; }
+  .bars i { flex: 1; background: var(--purple); border-radius: 7px; }
+  .sect-lab { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--p-muted); }
+  .tabbar { position: absolute; left: 14px; right: 14px; bottom: 12px; height: 52px; background: var(--p-tab); backdrop-filter: blur(14px); border: 1px solid var(--p-line); border-radius: 26px; display: flex; align-items: center; justify-content: space-around; }
+  .tabbar .tb { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--p-muted); font-size: 9px; font-weight: 600; }
+  .tabbar .tb.on { color: var(--p-text); }
+  .tabbar .tb svg { width: 20px; height: 20px; }
+  .caption { text-align: center; font-size: 13px; color: var(--muted); margin-top: 12px; font-weight: 600; }
+
+  /* store spec table */
+  .specs { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .specs th, .specs td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .specs th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .specs td.dim { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .specs-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+
+  .how { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .how .step { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+  .how .num { font-family: var(--mono); font-size: 13px; color: var(--eyebrow); font-weight: 700; }
+  .how h3 { font-size: 16px; margin: 8px 0 6px; }
+  .how p { margin: 0; color: var(--muted); font-size: 14px; }
+  .how code { font-family: var(--mono); font-size: 12.5px; background: rgba(108,92,231,0.12); color: var(--eyebrow); padding: 1px 6px; border-radius: 6px; }
+  footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--faint); font-size: 13px; }
+</style>
+
+<div class="kit">
+  <div class="wrap">
+
+    <div class="brandbar">
+      <div class="mark">M</div>
+      <div>
+        <div class="n">Me Time</div>
+        <div class="s">Design Kit · v1</div>
+      </div>
+    </div>
+
+    <p class="eyebrow">Beauty &amp; grooming booking · iOS &amp; Android</p>
+    <h1>The Me Time design kit.</h1>
+    <p class="lede">Every color, type style, component and screen the app is built from — the source of truth for App Store and Google Play artwork. Pulled straight from the app's theme tokens, in light and dark.</p>
+
+    <!-- ============ COLOR ============ -->
+    <section>
+      <div class="sec-head">
+        <p class="eyebrow">01 — Color</p>
+        <h2>Palette</h2>
+        <p>One purple accent carries the brand; amber, green and red are semantic only (rating, positive, destructive). Surfaces come in a matched light and dark set.</p>
+      </div>
+
+      <div class="subhead">Brand &amp; semantic</div>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#6c5ce7"></div><div class="meta"><div class="name">Accent · Purple</div><div class="hex">#6C5CE7</div></div></div>
+        <div class="sw"><div class="chip" style="background:linear-gradient(120deg,#7b6cf0,#6c5ce7)"></div><div class="meta"><div class="name">Accent gradient</div><div class="hex">#7B6CF0 → #6C5CE7</div></div></div>
+        <div class="sw"><div class="chip" style="background:#e8a94b"></div><div class="meta"><div class="name">Rating · Amber</div><div class="hex">#E8A94B</div></div></div>
+        <div class="sw"><div class="chip" style="background:#42b883"></div><div class="meta"><div class="name">Positive · Green</div><div class="hex">#42B883</div></div></div>
+        <div class="sw"><div class="chip" style="background:#e5484d"></div><div class="meta"><div class="name">Destructive · Red</div><div class="hex">#E5484D</div></div></div>
+        <div class="sw"><div class="chip" style="background:#1c1c1e"></div><div class="meta"><div class="name">Ink</div><div class="hex">#1C1C1E</div></div></div>
+      </div>
+
+      <div class="subhead">Light surfaces</div>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#f2f2f7"></div><div class="meta"><div class="name">Background</div><div class="hex">#F2F2F7</div></div></div>
+        <div class="sw"><div class="chip" style="background:#ffffff;border-bottom:1px solid rgba(0,0,0,0.06)"></div><div class="meta"><div class="name">Card</div><div class="hex">#FFFFFF</div></div></div>
+        <div class="sw"><div class="chip" style="background:#1c1c1e"></div><div class="meta"><div class="name">Ink surface</div><div class="hex">#1C1C1E</div></div></div>
+        <div class="sw"><div class="chip" style="background:#3c3c43;opacity:0.6"></div><div class="meta"><div class="name">Text secondary</div><div class="hex">rgba(60,60,67,.6)</div></div></div>
+      </div>
+
+      <div class="subhead">Dark surfaces</div>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#121316"></div><div class="meta"><div class="name">Background</div><div class="hex">#121316</div></div></div>
+        <div class="sw"><div class="chip" style="background:#232529"></div><div class="meta"><div class="name">Card</div><div class="hex">#232529</div></div></div>
+        <div class="sw"><div class="chip" style="background:#3a3c42"></div><div class="meta"><div class="name">Ink surface</div><div class="hex">#3A3C42</div></div></div>
+        <div class="sw"><div class="chip" style="background:#f2f2f7"></div><div class="meta"><div class="name">Text</div><div class="hex">#F2F2F7</div></div></div>
+      </div>
+    </section>
+
+    <!-- ============ TYPE ============ -->
+    <section>
+      <div class="sec-head">
+        <p class="eyebrow">02 — Typography</p>
+        <h2>Type scale</h2>
+        <p>The app uses the platform system font — San&nbsp;Francisco on iOS, Roboto on Android — so it feels native. Headings run heavy (800) with tight negative tracking; labels are uppercase with a little spacing.</p>
+      </div>
+      <div>
+        <div class="typerow"><span class="tag">Display · 33/800</span><span class="t-display">Find your me time</span></div>
+        <div class="typerow"><span class="tag">Title · 28/800</span><span class="t-title">Salon Analytics</span></div>
+        <div class="typerow"><span class="tag">Heading · 22/800</span><span class="t-heading">Artist performance</span></div>
+        <div class="typerow"><span class="tag">Body · 16/400</span><span class="t-body">Book in seconds, keep it all in one place.</span></div>
+        <div class="typerow"><span class="tag">Label · 14/600</span><span class="t-label">Confirm booking</span></div>
+        <div class="typerow"><span class="tag">Caption · 12/600</span><span class="t-caption">Revenue this month</span></div>
+      </div>
+    </section>
+
+    <!-- ============ COMPONENTS ============ -->
+    <section>
+      <div class="sec-head">
+        <p class="eyebrow">03 — Components</p>
+        <h2>Building blocks</h2>
+        <p>Radii: buttons &amp; cards 16px, tiles 20px, sheets 28px, chips fully round. Pills and cards carry state through border and fill.</p>
+      </div>
+      <div class="board">
+        <div class="cell"><div class="cap">Buttons</div>
+          <div class="btn ink">Confirm booking</div>
+          <div class="btn grad">Salon Dashboard</div>
+          <div class="btn danger">Log out</div>
+        </div>
+        <div class="cell"><div class="cap">Segmented</div>
+          <div class="seg"><span class="on">For him</span><span>For her</span></div>
+          <div style="height:10px"></div>
+          <div class="seg"><span class="on">EN</span><span>RO</span><span>HU</span></div>
+        </div>
+        <div class="cell"><div class="cap">Time chips</div>
+          <div class="chips">
+            <span class="pill on">09:00</span><span class="pill">09:30</span>
+            <span class="pill taken">10:00</span><span class="pill">10:30</span>
+          </div>
+        </div>
+        <div class="cell"><div class="cap">Badges</div>
+          <div class="chips" style="align-items:center">
+            <span class="badge glass">ANYONE</span>
+            <span class="badge good">▲ +18%</span>
+            <span class="badge rate">Excellent</span>
+          </div>
+          <div style="height:12px"></div>
+          <span class="badge noshow">Not shown</span>
+        </div>
+        <div class="cell"><div class="cap">Rating</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="stars">★★★★★</span>
+            <b style="font-size:20px">4.9</b>
+            <span style="color:var(--muted);font-size:13px">(212 reviews)</span>
+          </div>
+        </div>
+        <div class="cell"><div class="cap">Card</div>
+          <div style="display:flex;align-items:center;gap:11px">
+            <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#7b6cf0,#6c5ce7)"></div>
+            <div><div style="font-weight:700;font-size:14px">Alex Rivera</div><div style="color:var(--muted);font-size:12px">Barber · Fade &amp; Co.</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREENS ============ -->
+    <section>
+      <div class="sec-head">
+        <p class="eyebrow">04 — Screens</p>
+        <h2>Store-ready screens</h2>
+        <p>Four representative flows across both themes — drop these into device frames with a caption above each for your listing artwork.</p>
+      </div>
+
+      <div class="screens">
+
+        <!-- HOME (light) -->
+        <div>
+          <div class="phone" data-t="light">
+            <div class="notch"></div>
+            <div class="scr">
+              <div class="loc">◍ San Francisco, CA ▾</div>
+              <div class="h1">Find your me time</div>
+              <div style="display:flex;gap:10px">
+                <div class="search" style="flex:1;margin-top:14px">⌕ Search salons &amp; services</div>
+                <div class="kbtn" style="margin-top:14px">⚙</div>
+              </div>
+              <div class="p-seg"><span class="on">For him</span><span>For her</span></div>
+              <div class="p-lab">Categories</div>
+              <div class="tiles">
+                <div class="tile" style="background:linear-gradient(150deg,#3a3d46,#1c1c1e)"><div class="tc"><div class="tn">Barber</div><div class="cnt">12 nearby</div></div></div>
+                <div class="tile" style="background:linear-gradient(150deg,#2fbfa6,#1c7d6d)"><div class="tc"><div class="tn">Beard &amp; Shave</div><div class="cnt">8 nearby</div></div></div>
+                <div class="tile" style="background:linear-gradient(150deg,#4c86e8,#2b5bb0)"><div class="an"><span class="badge glass">ANYONE</span></div><div class="tc"><div class="tn">Skincare</div><div class="cnt">6 nearby</div></div></div>
+                <div class="tile" style="background:linear-gradient(150deg,#e85b9b,#b23570)"><div class="tc"><div class="tn">Hair Salon</div><div class="cnt">21 nearby</div></div></div>
+              </div>
+            </div>
+            <div class="tabbar">
+              <div class="tb on">⌂<span>Home</span></div>
+              <div class="tb">♡<span>Favorites</span></div>
+              <div class="tb">▤<span>Bookings</span></div>
+              <div class="tb">◔<span>Profile</span></div>
+            </div>
+          </div>
+          <div class="caption">Home · discovery</div>
+        </div>
+
+        <!-- BOOKING (light) -->
+        <div>
+          <div class="phone" data-t="light">
+            <div class="notch"></div>
+            <div class="scr">
+              <div style="color:var(--p-muted);font-size:18px">‹</div>
+              <div class="h1" style="margin-top:6px">Book</div>
+              <div class="sub">Alex Rivera · Fade &amp; Co.</div>
+              <div class="sect-lab" style="margin-top:16px">Service</div>
+              <div class="pcard" style="border:1.5px solid var(--p-text);display:flex;justify-content:space-between;align-items:center">
+                <div><div class="nm">Skin Fade</div><div class="sv">45 min · $38</div></div>
+                <div style="width:18px;height:18px;border-radius:9px;border:2px solid var(--p-text);display:grid;place-items:center"><div style="width:9px;height:9px;border-radius:5px;background:var(--p-text)"></div></div>
+              </div>
+              <div class="pcard" style="display:flex;justify-content:space-between;align-items:center">
+                <div><div class="nm">Cut + Beard</div><div class="sv">60 min · $52</div></div>
+                <div style="width:18px;height:18px;border-radius:9px;border:2px solid var(--p-line)"></div>
+              </div>
+              <div class="sect-lab" style="margin-top:16px">Day</div>
+              <div class="days">
+                <div class="day"><small>WED</small><b>18</b></div>
+                <div class="day on"><small>THU</small><b>19</b></div>
+                <div class="day"><small>FRI</small><b>20</b></div>
+                <div class="day"><small>SAT</small><b>21</b></div>
+              </div>
+              <div class="sect-lab" style="margin-top:14px">Time</div>
+              <div class="times">
+                <span class="tm">09:00</span><span class="tm on">09:45</span><span class="tm x">10:30</span><span class="tm">11:15</span>
+              </div>
+              <div class="p-btn">Confirm booking</div>
+            </div>
+          </div>
+          <div class="caption">Booking · pick service, day, time</div>
+        </div>
+
+        <!-- BOOKINGS / SCHEDULE (dark) -->
+        <div>
+          <div class="phone" data-t="dark">
+            <div class="notch"></div>
+            <div class="scr">
+              <div class="h1">Bookings</div>
+              <div class="sub">Pick a day to see its appointments</div>
+              <div class="days" style="margin-top:14px">
+                <div class="day"><small>MON</small><b>15</b><br><span class="dc">2</span></div>
+                <div class="day on"><small>TODAY</small><b>17</b><br><span class="dc">3</span></div>
+                <div class="day"><small>FRI</small><b>19</b><br><span class="dc">1</span></div>
+              </div>
+              <div class="sect-lab" style="margin-top:16px">Upcoming</div>
+              <div class="pcard row">
+                <div class="tblk"><b>14:30</b><i>15:15</i></div>
+                <div style="flex:1"><div class="nm">James Porter</div><div class="sv">Skin Fade</div></div>
+              </div>
+              <div class="sect-lab" style="margin-top:14px">Past</div>
+              <div class="pcard row">
+                <div class="tblk"><b>10:00</b><i>10:45</i></div>
+                <div style="flex:1"><div class="nm">Omar Diaz</div><div class="sv">Cut + Beard</div></div>
+                <span class="badge" style="border:1.5px solid var(--p-line);color:var(--p-muted);font-weight:700">Not shown</span>
+              </div>
+              <div class="pcard row" style="border:2px solid #e5484d">
+                <div class="tblk"><b>09:00</b><i>09:30</i></div>
+                <div style="flex:1"><div class="nm">Leo Marsh</div><div class="sv">Beard Trim</div></div>
+                <span class="badge noshow">Not shown</span>
+              </div>
+            </div>
+            <div class="tabbar">
+              <div class="tb">▤<span>Bookings</span></div>
+              <div class="tb">✂<span>Services</span></div>
+              <div class="tb on">◔<span>Profile</span></div>
+            </div>
+          </div>
+          <div class="caption">Bookings · day view + no-show</div>
+        </div>
+
+        <!-- DASHBOARD (dark) -->
+        <div>
+          <div class="phone" data-t="dark">
+            <div class="notch"></div>
+            <div class="scr">
+              <div class="h1">Salon Analytics</div>
+              <div class="sub">Fade &amp; Co. · full performance</div>
+              <div class="kpi" style="margin-top:16px">
+                <div class="k"><span class="kd">▲ 14%</span><div class="ic" style="background:rgba(108,92,231,0.16);color:#6c5ce7">$</div><div class="kv">$71.4k</div><div class="kl">Revenue</div></div>
+                <div class="k"><span class="kd">▲ 8%</span><div class="ic" style="background:rgba(47,191,166,0.18);color:#2fbfa6">▤</div><div class="kv">952</div><div class="kl">Appointments</div></div>
+                <div class="k"><span class="kd">▲ 11%</span><div class="ic" style="background:rgba(232,169,75,0.2);color:#e8a94b">◔</div><div class="kv">530</div><div class="kl">Customers</div></div>
+                <div class="k"><span class="kd">★</span><div class="ic" style="background:rgba(232,169,75,0.2);color:#e8a94b">★</div><div class="kv">4.8</div><div class="kl">Avg rating</div></div>
+              </div>
+              <div class="chart">
+                <div class="sect-lab">Overview · revenue</div>
+                <div style="font-size:22px;font-weight:800;margin-top:6px">$71k</div>
+                <div class="bars">
+                  <i style="height:56%"></i><i style="height:64%"></i><i style="height:78%"></i><i style="height:92%"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="caption">Salon dashboard · real analytics</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ STORE SPECS ============ -->
+    <section>
+      <div class="sec-head">
+        <p class="eyebrow">05 — Store artwork</p>
+        <h2>Screenshot sizes</h2>
+        <p>The exact canvas sizes each store expects. Design at these pixel dimensions, portrait.</p>
+      </div>
+      <div class="specs-wrap">
+        <table class="specs">
+          <thead><tr><th>Store</th><th>Asset</th><th>Pixels (portrait)</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>App Store</td><td>iPhone 6.9″ / 6.7″</td><td class="dim">1290 × 2796</td><td>Required set, up to 10</td></tr>
+            <tr><td>App Store</td><td>iPhone 6.5″</td><td class="dim">1242 × 2688</td><td>Recommended</td></tr>
+            <tr><td>App Store</td><td>iPad Pro 12.9″</td><td class="dim">2048 × 2732</td><td>Only if iPad supported</td></tr>
+            <tr><td>App Store</td><td>App icon</td><td class="dim">1024 × 1024</td><td>No alpha, no rounding</td></tr>
+            <tr><td>Google Play</td><td>Phone screenshot</td><td class="dim">1080 × 1920</td><td>2–8, min side 320px</td></tr>
+            <tr><td>Google Play</td><td>Feature graphic</td><td class="dim">1024 × 500</td><td>Required, landscape</td></tr>
+            <tr><td>Google Play</td><td>App icon</td><td class="dim">512 × 512</td><td>32-bit PNG</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ HOW TO USE ============ -->
+    <section>
+      <div class="sec-head">
+        <p class="eyebrow">06 — Handoff</p>
+        <h2>Getting this into Figma</h2>
+        <p>Two paths, depending on whether you want the visuals or the raw tokens.</p>
+      </div>
+      <div class="how">
+        <div class="step">
+          <div class="num">A</div>
+          <h3>Import this page as layers</h3>
+          <p>In Figma, install the free <b>html.to.design</b> plugin → paste this page's URL. It rebuilds these swatches, components and screens as editable frames you can reframe for store shots.</p>
+        </div>
+        <div class="step">
+          <div class="num">B</div>
+          <h3>Import the color tokens</h3>
+          <p>Install <b>Tokens Studio for Figma</b> → Import → <code>design/tokens.json</code> from the repo. You get every light/dark color and radius as managed Figma variables.</p>
+        </div>
+        <div class="step">
+          <div class="num">C</div>
+          <h3>Or just screenshot</h3>
+          <p>Every screen here is a real HTML render. Screenshot a frame, drop it into a device mockup at the sizes in section 05, add a caption, and you have a listing image.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Me Time — Design Kit · generated from <code style="font-family:var(--mono)">src/theme/tokens.ts</code>. Colors, type and radii match the shipping app in light and dark.
+    </footer>
+
+  </div>
+</div>

@@ -1,0 +1,67 @@
+/*
+ * Me Time — design tokens as CSS custom properties.
+ * Mirrors src/theme/tokens.ts. Useful for web mockups, and for importing the
+ * Design Kit page into Figma via the "html.to.design" plugin.
+ */
+
+:root {
+  /* Brand */
+  --brand-purple: #6c5ce7;
+  --brand-purple-light: #7b6cf0;
+  --brand-teal: #2fbfa6;
+  --brand-green: #42b883;
+  --brand-green-deep: #1f8a4c;
+  --brand-amber: #e8a94b;
+  --brand-pink: #e85b9b;
+  --brand-blue: #4c86e8;
+  --brand-red: #e5484d;
+  --brand-ink: #1c1c1e;
+
+  /* Radii (px) */
+  --radius-button: 16px;
+  --radius-card: 16px;
+  --radius-tile: 20px;
+  --radius-sheet: 28px;
+  --radius-chip: 999px;
+
+  /* Spacing (px) */
+  --space-gutter: 20px;
+  --space-card-pad: 16px;
+
+  /* Light theme (default) */
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --ink-surface: #1c1c1e;
+  --on-ink: #ffffff;
+  --text: #1c1c1e;
+  --text-secondary: rgba(60, 60, 67, 0.6);
+  --text-tertiary: rgba(60, 60, 67, 0.5);
+  --text-faint: rgba(60, 60, 67, 0.4);
+  --hairline: rgba(60, 60, 67, 0.12);
+  --hairline-strong: rgba(60, 60, 67, 0.25);
+  --card-border: rgba(60, 60, 67, 0.1);
+  --tab-bar-bg: rgba(248, 248, 250, 0.92);
+  --seg-track: rgba(120, 120, 128, 0.12);
+  --seg-active-bg: #ffffff;
+  --destructive: #e5484d;
+  --icon-muted: rgba(60, 60, 67, 0.55);
+}
+
+:root[data-theme='dark'] {
+  --bg: #121316;
+  --card: #232529;
+  --ink-surface: #3a3c42;
+  --on-ink: #ffffff;
+  --text: #f2f2f7;
+  --text-secondary: rgba(235, 235, 245, 0.6);
+  --text-tertiary: rgba(235, 235, 245, 0.55);
+  --text-faint: rgba(235, 235, 245, 0.45);
+  --hairline: rgba(235, 235, 245, 0.14);
+  --hairline-strong: rgba(235, 235, 245, 0.22);
+  --card-border: rgba(235, 235, 245, 0.3);
+  --tab-bar-bg: rgba(20, 21, 24, 0.9);
+  --seg-track: rgba(120, 120, 128, 0.12);
+  --seg-active-bg: #4c4e55;
+  --destructive: #e5484d;
+  --icon-muted: rgba(235, 235, 245, 0.55);
+}
